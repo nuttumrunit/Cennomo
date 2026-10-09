@@ -473,6 +473,24 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
   .brand{width:66px;min-width:66px;padding:0 9px}
 }
 
+/* Treasury detail console. */
+.treasury-facts{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #202420;background:#010201}
+.treasury-facts>span{min-height:55px;padding:11px 13px;border-right:1px solid #171b18;display:flex;flex-direction:column;gap:8px}.treasury-facts>span:last-child{border-right:0}
+.treasury-facts small{color:#59635b;font-size:7px;letter-spacing:.08em}.treasury-facts b{color:#c8d0ca;font-size:8px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.treasury-address-card{padding:15px 18px;border-bottom:1px solid #202420;background:#010301}.treasury-address-card>small{display:block;color:#59635b;font-size:7px;letter-spacing:.1em}.treasury-address-card code{display:block;margin:9px 0 11px;color:#d8ded9;font:8px/1.5 var(--mono);overflow-wrap:anywhere}.treasury-address-card>div{display:flex;justify-content:space-between;color:#687169;font-size:7px}.treasury-address-card a{color:var(--green);text-decoration:none}.treasury-address-card a:hover{text-decoration:underline}
+.treasury-event-head{background:#070a07;color:#5e685f;letter-spacing:.08em}.treasury-event-head b{color:#5e685f}
+.fee-split{display:grid;grid-template-columns:1.15fr 1px repeat(3,1fr);border-top:1px solid #202420;background:#010201}.fee-split>span{padding:9px 13px;border-right:1px solid #171b18;display:flex;align-items:center;justify-content:space-between;gap:8px}.fee-split>span:last-child{border-right:0}.fee-split>i{background:#2b4731}.fee-split small{color:#626c64;font-size:7px}.fee-split b{color:var(--green);font-size:10px}
+
+/* Centered provisional identity and complete post-burn sequence. */
+.identity-console-head{position:relative!important;min-height:180px!important;padding:22px!important;display:grid!important;grid-template-columns:1fr!important;justify-items:center!important;align-content:center!important;gap:12px!important;text-align:center}
+.identity-console-head>.core-mark{width:82px!important;height:82px!important}.identity-console-head>.core-mark img{width:132px!important;height:132px!important;left:-25px!important;top:-40px!important}
+.identity-console-head>div{width:100%}.identity-console-head>div h2{margin-top:9px}.identity-console-head>b{position:absolute;right:13px;top:13px}
+.post-burn-flow{max-width:410px;margin:16px auto;border:1px solid #252b26;text-align:left}.post-burn-flow header{height:34px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #252b26}.post-burn-flow header b{color:#bcc5be;font-size:7px}.post-burn-flow header span{color:#59635b;font-size:7px}.post-burn-flow>span{padding:9px 11px;display:grid;grid-template-columns:25px 1fr;gap:3px 8px;border-bottom:1px solid #171b18}.post-burn-flow>span:last-child{border-bottom:0}.post-burn-flow small{grid-row:1/3;color:var(--green);font-size:7px}.post-burn-flow b{color:#b9c2bb;font-size:8px}.post-burn-flow em{color:#5f6861;font-size:7px;font-style:normal}
+.spawn-steps li.complete{color:#aab4ac;background:#020502}.spawn-steps li.complete b{color:var(--green)}.spawn-steps li.locked{color:#465048}.spawn-steps li.locked b{color:#626d64}
+
+@media(max-width:900px){#route-treasury .treasury-side{display:block}.treasury-layout{height:auto!important}.treasury-main,.treasury-side,.settlement{overflow:visible}}
+@media(max-width:760px){.treasury-facts{grid-template-columns:repeat(2,1fr)}.treasury-facts>span{border-bottom:1px solid #171b18}.fee-split{grid-template-columns:1fr 1fr}.fee-split>i{display:none}.fee-split>span{border-bottom:1px solid #171b18}}
+
 /* Dense, evidence-first supporting content. */
 #route-live .stream-head,#route-live .event{grid-template-columns:68px 21% 20% minmax(0,1fr) 82px;gap:7px}
 #route-live .event-stream{overflow:auto}

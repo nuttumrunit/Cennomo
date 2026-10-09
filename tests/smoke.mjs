@@ -59,6 +59,8 @@ await check('Territory canvas drawn', () => page.$eval('#territoryCanvas', node 
 await page.click('[data-route="treasury"]');
 await check('Treasury value rendered', () => page.$eval('.treasury-total strong', node => node.textContent.includes('SOL')));
 await check('Treasury events rendered', () => page.$eval('#treasuryEvents', node => node.children.length > 0));
+await check('Treasury wallet links to Solscan', () => page.$eval('#treasuryExplorer', node => !node.hidden && node.href.startsWith('https://solscan.io/account/')));
+await check('Treasury reports real settlement counters', () => page.$eval('#treasurySettlements', node => /^\d+$/.test(node.textContent.trim())));
 
 await page.click('[data-route="deploy"]');
 await check('Deploy correctly locked without CA', () => page.$eval('#spawnButton', node => node.disabled && node.textContent.includes('TBA')));
@@ -66,10 +68,15 @@ await page.click('#connectWallet');
 await page.waitForSelector('#walletModal.open');
 await check('Wallet selector opens', () => page.$eval('#walletModal', node => node.getAttribute('aria-hidden') === 'false'));
 await page.click('#closeWalletModal');
+await check('Deploy identity logo centered', () => page.$eval('.identity-console-head', node => { const host=node.getBoundingClientRect(),logo=node.querySelector('.core-mark').getBoundingClientRect(); return Math.abs((host.left+host.width/2)-(logo.left+logo.width/2))<2; }));
 
 await page.click('[data-route="manual"]');
 await page.click('[data-manual-target="security"]');
 await check('Manual tabs work', () => page.$eval('#manual-security', node => node.classList.contains('active')));
+await page.click('[data-manual-target="gateway"]');
+await check('Manual Gateway chapter works', () => page.$eval('#manual-gateway', node => node.classList.contains('active')));
+await page.click('[data-manual-target="deployment"]');
+await check('Manual Deployment chapter works', () => page.$eval('#manual-deployment', node => node.classList.contains('active')));
 
 await check('X link configured', () => page.$eval('.x-link', node => node.href === 'https://x.com/cennomonx'));
 await check('Pump link configured', () => page.$eval('.buy', node => node.href.startsWith('https://pump.fun/')));
