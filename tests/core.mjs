@@ -18,14 +18,14 @@ check('worker heartbeat online', health.workers >= 1);
 check('credential vault configured', health.vaultConfigured === true);
 
 const snapshot = await request('/api/snapshot');
-check('12 official Operators', snapshot.metrics.officialOperators === 12);
-check('7 credential-gated Operators remain learning', snapshot.operators.filter(operator => operator.state === 'learning' && operator.credential_required).length === 7);
+check('12 official Tardigrade Agents', snapshot.metrics.officialOperators === 12);
+check('7 credential-gated Tardigrade Agents remain learning', snapshot.operators.filter(operator => operator.state === 'learning' && operator.credential_required).length === 7);
 check('persistent worker metric', snapshot.metrics.onlineWorkers >= 1);
 
 const catalog = await request('/api/v1/skills');
 check('12 unique Gateway tools', catalog.data.length === 12);
 const providers = await request('/api/v1/skills/quote.fetch/providers');
-check('provider router selected an Operator', providers.selected === 'jupiter-hand-04' && providers.providers.length >= 1);
+check('provider router selected a Tardigrade Agent', providers.selected === 'jupiter-tardigrade-01' && providers.providers.length >= 1);
 
 const call = await request('/api/v1/skills/repository.read/invoke', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
@@ -42,7 +42,7 @@ check('MCP catalog publishes 12 tools', mcp.result.tools.length === 12);
 
 const approval = await request('/api/v1/approvals', {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ operator: 'stripe-hand-09', capability: 'invoice.create', wallet: '11111111111111111111111111111111', input: { test: true } })
+  body: JSON.stringify({ operator: 'stripe-tardigrade-09', capability: 'invoice.create', wallet: '11111111111111111111111111111111', input: { test: true } })
 }, 201);
 check('wallet approval challenge created', approval.challenge.includes(approval.approvalId));
 const approvalState = await request(`/api/v1/approvals/${approval.approvalId}`);

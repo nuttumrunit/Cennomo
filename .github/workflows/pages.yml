@@ -1,4 +1,4 @@
-name: Deploy Cennomo frontend to GitHub Pages
+name: Deploy Tardumo frontend to GitHub Pages
 
 on:
   push:

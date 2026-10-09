@@ -1,80 +1,80 @@
 [
   {
-    "name":"jupiter-hand-04","territory":"jupiter","targetUrl":"https://developers.jup.ag/docs/swap/v1/get-quote",
+    "name":"jupiter-tardigrade-01","territory":"jupiter","targetUrl":"https://developers.jup.ag/docs/swap/v1/get-quote",
     "mission":"Solana routing, quotes and wallet-authorized swap construction.",
     "capabilities":["quote.fetch","swap.build","limit-order.build","dca.build"],
     "probe":{"name":"quote.fetch","url":"https://lite-api.jup.ag/swap/v1/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&amount=1000000&slippageBps=50","requiredKeys":["inputMint","outputMint","outAmount","routePlan"]}
   },
   {
-    "name":"octokit-finger-11","territory":"github","targetUrl":"https://docs.github.com/en/rest/repos/repos",
+    "name":"github-tardigrade-04","territory":"github","targetUrl":"https://docs.github.com/en/rest/repos/repos",
     "mission":"Repository inspection, Issue and Pull Request workflows.",
     "capabilities":["repository.read","issue.create","pull-request.create","workflow.inspect"],
     "probe":{"name":"repository.read","url":"https://api.github.com/repos/octocat/Hello-World","requiredKeys":["id","full_name","default_branch"]}
   },
   {
-    "name":"notion-palm-02","territory":"notion","targetUrl":"https://developers.notion.com/reference/post-database-query",
+    "name":"notion-tardigrade-05","territory":"notion","targetUrl":"https://developers.notion.com/reference/post-database-query",
     "mission":"Workspace pages, data sources and database automation.",
     "capabilities":["page.read","page.create","database.query","property.update"],
     "credentialEnv":"NOTION_API_TOKEN",
     "probe":{"name":"notion.reference.inspect","url":"https://developers.notion.com/reference/post-database-query","responseType":"html","requiredPatterns":["query","database"]}
   },
   {
-    "name":"mesh-grip-08","territory":"blender","targetUrl":"https://docs.blender.org/api/current/bpy.ops.mesh.html",
+    "name":"blender-tardigrade-06","territory":"blender","targetUrl":"https://docs.blender.org/api/current/bpy.ops.mesh.html",
     "mission":"Deterministic 3D generation, scene editing and rendering through Python.",
     "capabilities":["mesh.generate","scene.modify","material.assign","render.execute"],
     "credentialEnv":"BLENDER_PATH",
     "probe":{"name":"blender.reference.inspect","url":"https://docs.blender.org/api/current/bpy.ops.mesh.html","responseType":"html","requiredPatterns":["bpy.ops.mesh","mesh"]}
   },
   {
-    "name":"cart-hand-17","territory":"shopify","targetUrl":"https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate",
+    "name":"shopify-tardigrade-07","territory":"shopify","targetUrl":"https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate",
     "mission":"Product, inventory, order and storefront operations.",
     "capabilities":["product.read","product.publish","inventory.adjust","order.inspect"],
     "credentialEnv":"SHOPIFY_ADMIN_TOKEN",
     "probe":{"name":"shopify.reference.inspect","url":"https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate","responseType":"html","requiredPatterns":["productCreate","GraphQL"]}
   },
   {
-    "name":"discord-digit-06","territory":"discord","targetUrl":"https://docs.discord.com/developers/events/gateway",
+    "name":"discord-tardigrade-08","territory":"discord","targetUrl":"https://docs.discord.com/developers/events/gateway",
     "mission":"Gateway discovery, messaging and permission-aware community automation.",
     "capabilities":["gateway.discover","message.send","channel.manage","member.moderate"],
     "probe":{"name":"gateway.discover","url":"https://discord.com/api/v10/gateway","requiredKeys":["url"]}
   },
   {
-    "name":"stripe-hand-09","territory":"stripe","targetUrl":"https://docs.stripe.com/api/invoices/create",
+    "name":"stripe-tardigrade-09","territory":"stripe","targetUrl":"https://docs.stripe.com/api/invoices/create",
     "mission":"Customers, invoices, payments and webhook verification in test mode.",
     "capabilities":["customer.read","invoice.create","payment.inspect","webhook.verify"],
     "credentialEnv":"STRIPE_TEST_SECRET_KEY",
     "probe":{"name":"stripe.reference.inspect","url":"https://docs.stripe.com/api/invoices/create","responseType":"html","requiredPatterns":["invoice","create"]}
   },
   {
-    "name":"linear-knuckle-21","territory":"linear","targetUrl":"https://developers.linear.app/docs/graphql/working-with-the-graphql-api",
+    "name":"linear-tardigrade-10","territory":"linear","targetUrl":"https://developers.linear.app/docs/graphql/working-with-the-graphql-api",
     "mission":"Issue, project and workflow management through GraphQL.",
     "capabilities":["issue.read","issue.create","project.update","workflow.transition"],
     "credentialEnv":"LINEAR_API_KEY",
     "probe":{"name":"linear.reference.inspect","url":"https://developers.linear.app/docs/graphql/working-with-the-graphql-api","responseType":"html","requiredPatterns":["GraphQL","Linear"]}
   },
   {
-    "name":"figma-palm-13","territory":"figma","targetUrl":"https://developers.figma.com/docs/rest-api/",
+    "name":"figma-tardigrade-11","territory":"figma","targetUrl":"https://developers.figma.com/docs/rest-api/",
     "mission":"File inspection, component metadata, comments and asset export.",
     "capabilities":["file.read","component.inspect","comment.create","asset.export"],
     "credentialEnv":"FIGMA_ACCESS_TOKEN",
     "probe":{"name":"figma.reference.inspect","url":"https://developers.figma.com/docs/rest-api/","responseType":"html","requiredPatterns":["REST API","Figma"]}
   },
   {
-    "name":"telegram-digit-14","territory":"telegram","targetUrl":"https://core.telegram.org/bots/api#sendmessage",
+    "name":"telegram-tardigrade-12","territory":"telegram","targetUrl":"https://core.telegram.org/bots/api#sendmessage",
     "mission":"Bot messaging, webhook, chat and moderation operations.",
     "capabilities":["bot.inspect","message.send","webhook.configure","chat.moderate"],
     "credentialEnv":"TELEGRAM_BOT_TOKEN",
     "probe":{"name":"telegram.reference.inspect","url":"https://core.telegram.org/bots/api#sendmessage","responseType":"html","requiredPatterns":["sendMessage","Bot API"]}
   },
   {
-    "name":"wormhole-hand-01","territory":"wormhole","targetUrl":"https://wormhole.com/docs/protocol/infrastructure/vaas/",
+    "name":"wormhole-tardigrade-02","territory":"wormhole","targetUrl":"https://wormhole.com/docs/protocol/infrastructure/vaas/",
     "mission":"Cross-chain message discovery, VAA verification and transfer-status tracking.",
     "capabilities":["guardian-set.read","vaa.fetch","transfer.track","delivery.verify"],
     "probe":{"name":"guardian-set.read","url":"https://api.wormholescan.io/v1/guardianset/current","requiredKeys":["guardianSet"]},
     "official":true,"cohort":"genesis"
   },
   {
-    "name":"aave-palm-12","territory":"aave","targetUrl":"https://www.aave.com/docs/aave-v3/getting-started/graphql",
+    "name":"aave-tardigrade-03","territory":"aave","targetUrl":"https://www.aave.com/docs/aave-v3/getting-started/graphql",
     "mission":"Lending-market discovery, account health monitoring and wallet-authorized supply or borrow preparation.",
     "capabilities":["chains.read","market.discover","position.inspect","health-factor.monitor","transaction.prepare"],
     "probe":{"name":"chains.read","url":"https://api.v3.aave.com/graphql","method":"POST","body":{"query":"query Chains { chains { name chainId } }"},"requiredKeys":["data"]},

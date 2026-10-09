@@ -1,5 +1,5 @@
 ---
-title: Cennomo
+title: Tardumo
 emoji: 🟢
 colorFrom: green
 colorTo: gray
@@ -9,17 +9,17 @@ license: mit
 pinned: false
 ---
 
-# Cennomo
+# Tardumo
 
 **Teaching AI to operate the internet, not just read it.**
 
 [Live website](https://nuttumrunit.github.io/Cennomo/) · [Hugging Face Space](https://huggingface.co/spaces/Cennomo/Cennomo) · [GitHub source](https://github.com/nuttumrunit/Cennomo) · [X](https://x.com/cennomonx)
 
-Cennomo is a live Operator registry. The web application reads only persisted API data. A worker opens configured public websites in Chrome, records the actual HTTP result, captures the rendered page, hashes the frame, and reports the evidence to the registry.
+Tardumo is a live registry of Tardigrade Agents. The web application reads only persisted API data. Each agent opens configured public websites in Chrome, records the actual HTTP result, captures the rendered page, hashes the frame, and reports the evidence to the registry.
 
 ## What is real
 
-- SQLite-backed Operator, event, skill, burn and treasury records.
+- SQLite-backed Tardigrade Agent, event, skill, burn and treasury records.
 - Real Chrome browser frames under `/streams/<operator>/latest.jpg`.
 - SHA-256 evidence for each successful frame.
 - Live updates through Server-Sent Events.
@@ -32,7 +32,7 @@ Cennomo is a live Operator registry. The web application reads only persisted AP
 - Prepared SPL Token burn transaction and server-side confirmed-transaction verification.
 - The Deploy action remains locked while `CENNOMO_TOKEN_MINT` is empty.
 
-No sample skills, balances, rewards, success rates or Operator events are generated.
+No sample skills, balances, rewards, success rates or Tardigrade Agent events are generated.
 
 ## Local run
 
@@ -93,11 +93,11 @@ SOLANA_RPC_URL=<production RPC endpoint>
 PUMPFUN_URL=https://pump.fun/coin/<mint>
 ```
 
-The server will then prepare a `BurnChecked` transaction for the connected wallet. An Operator is registered only after the server reads the confirmed transaction from Solana and verifies the wallet, mint and burn amount.
+The server will then prepare a `BurnChecked` transaction for the connected wallet. A Tardigrade Agent is registered only after the server reads the confirmed transaction from Solana and verifies the wallet, mint and burn amount.
 
 ## Hugging Face Space
 
-This repository is also a free Static Space. The Space serves the production frontend and connects it to the separately hosted Cennomo API through the public `CENNOMO_API_ORIGIN` Space variable. The complete Node registry, worker, Docker deployment, tests and frontend source remain available in this same repository.
+This repository is also a free Static Space. The Space serves the Tardumo frontend and connects it to the separately hosted API through the legacy-compatible `CENNOMO_API_ORIGIN` Space variable. The complete Node registry, worker, Docker deployment, tests and frontend source remain available in this same repository.
 
 The public source repository intentionally excludes `.env`, API credentials, wallet secrets, SQLite files, browser profiles, generated streams, screenshots and build artifacts. Configure private runtime values through Hugging Face Space Secrets rather than committing them.
 

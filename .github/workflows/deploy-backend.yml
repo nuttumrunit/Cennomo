@@ -1,4 +1,4 @@
-name: Deploy Cennomo backend
+name: Deploy Tardumo backend
 
 on:
   workflow_dispatch:

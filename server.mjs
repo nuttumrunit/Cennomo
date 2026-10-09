@@ -201,6 +201,68 @@ try { db.exec('ALTER TABLE operators ADD COLUMN telemetry_json TEXT'); } catch (
   if (!String(error.message).includes('duplicate column name')) throw error;
 }
 
+// Preserve the original 12 registry identities while moving their public
+// names to the Tardumo Tardigrade Agent system. Foreign keys use operator IDs,
+// so skills, evidence, credentials and settlement history remain attached.
+const officialTardigradeRenames = [
+  ['jupiter-hand-04', 'jupiter-tardigrade-01'],
+  ['wormhole-hand-01', 'wormhole-tardigrade-02'],
+  ['aave-palm-12', 'aave-tardigrade-03'],
+  ['octokit-finger-11', 'github-tardigrade-04'],
+  ['notion-palm-02', 'notion-tardigrade-05'],
+  ['mesh-grip-08', 'blender-tardigrade-06'],
+  ['cart-hand-17', 'shopify-tardigrade-07'],
+  ['discord-digit-06', 'discord-tardigrade-08'],
+  ['stripe-hand-09', 'stripe-tardigrade-09'],
+  ['linear-knuckle-21', 'linear-tardigrade-10'],
+  ['figma-palm-13', 'figma-tardigrade-11'],
+  ['telegram-digit-14', 'telegram-tardigrade-12']
+];
+const findOperatorByName = db.prepare('SELECT id FROM operators WHERE name=?');
+const findSkillByName = db.prepare('SELECT id FROM skills WHERE operator_id=? AND name=?');
+const listOperatorSkills = db.prepare('SELECT id,name FROM skills WHERE operator_id=?');
+const listOperatorCredentials = db.prepare('SELECT id,provider FROM credentials WHERE operator_id=?');
+const findCredentialByProvider = db.prepare('SELECT id FROM credentials WHERE operator_id=? AND provider=?');
+const renameOfficialTardigrade = db.prepare('UPDATE operators SET name=? WHERE id=?');
+const removeOperator = db.prepare('DELETE FROM operators WHERE id=?');
+
+// A previous interrupted rollout may already have seeded the destination
+// identity. Merge that duplicate back into the original registry identity
+// before renaming, so the public registry remains exactly 12 agents and the
+// original IDs and history are retained.
+db.exec('BEGIN IMMEDIATE');
+try {
+  for (const [previousName, tardigradeName] of officialTardigradeRenames) {
+    const original = findOperatorByName.get(previousName);
+    if (!original) continue;
+    const duplicate = findOperatorByName.get(tardigradeName);
+    if (duplicate && duplicate.id !== original.id) {
+      for (const skill of listOperatorSkills.all(duplicate.id)) {
+        const retainedSkill = findSkillByName.get(original.id, skill.name);
+        if (retainedSkill) {
+          db.prepare('UPDATE skill_calls SET skill_id=?, operator_id=? WHERE skill_id=?').run(retainedSkill.id, original.id, skill.id);
+          db.prepare('DELETE FROM skills WHERE id=?').run(skill.id);
+        } else {
+          db.prepare('UPDATE skills SET operator_id=? WHERE id=?').run(original.id, skill.id);
+        }
+      }
+      for (const credential of listOperatorCredentials.all(duplicate.id)) {
+        if (findCredentialByProvider.get(original.id, credential.provider)) db.prepare('DELETE FROM credentials WHERE id=?').run(credential.id);
+        else db.prepare('UPDATE credentials SET operator_id=? WHERE id=?').run(original.id, credential.id);
+      }
+      for (const table of ['events', 'burns', 'jobs', 'approvals', 'skill_calls']) {
+        db.prepare(`UPDATE ${table} SET operator_id=? WHERE operator_id=?`).run(original.id, duplicate.id);
+      }
+      removeOperator.run(duplicate.id);
+    }
+    renameOfficialTardigrade.run(tardigradeName, original.id);
+  }
+  db.exec('COMMIT');
+} catch (error) {
+  db.exec('ROLLBACK');
+  throw error;
+}
+
 const now = () => new Date().toISOString();
 const vaultKey = config.encryptionKey ? createHash('sha256').update(config.encryptionKey).digest() : null;
 function encryptSecret(secret) {
@@ -272,9 +334,9 @@ function operatorRows() {
       (SELECT COUNT(*) FROM skills s WHERE s.operator_id=o.id AND s.state='verified') AS verified_skills
     FROM operators o
     ORDER BY CASE o.name
-      WHEN 'jupiter-hand-04' THEN 0
-      WHEN 'wormhole-hand-01' THEN 1
-      WHEN 'aave-palm-12' THEN 2
+      WHEN 'jupiter-tardigrade-01' THEN 0
+      WHEN 'wormhole-tardigrade-02' THEN 1
+      WHEN 'aave-tardigrade-03' THEN 2
       ELSE 3
     END, o.id
   `).all();
@@ -532,14 +594,14 @@ function createApproval(body) {
   const operator = db.prepare('SELECT * FROM operators WHERE name=?').get(body.operator);
   if (!operator) throw Object.assign(new Error('operator not found'), { status: 404 });
   const source = sourceFor(operator.name, operator.territory);
-  if (!source?.capabilities?.includes(body.capability)) throw Object.assign(new Error('capability is not declared by this Operator'), { status: 400 });
+  if (!source?.capabilities?.includes(body.capability)) throw Object.assign(new Error('capability is not declared by this Tardigrade Agent'), { status: 400 });
   let wallet;
   try { wallet = new PublicKey(body.wallet).toBase58(); }
   catch { throw Object.assign(new Error('invalid wallet address'), { status: 400 }); }
   const inputHash = createHash('sha256').update(JSON.stringify(body.input || {})).digest('hex');
   const id = randomUUID();
   const expiresAt = new Date(Date.now() + 10 * 60_000).toISOString();
-  const challenge = `Cennomo authorization\nApproval: ${id}\nOperator: ${operator.name}\nCapability: ${body.capability}\nInput SHA-256: ${inputHash}\nExpires: ${expiresAt}`;
+  const challenge = `Tardumo authorization\nApproval: ${id}\nTardigrade Agent: ${operator.name}\nCapability: ${body.capability}\nInput SHA-256: ${inputHash}\nExpires: ${expiresAt}`;
   db.prepare('INSERT INTO approvals(id,operator_id,capability,wallet,input_hash,challenge,status,expires_at,created_at) VALUES(?,?,?,?,?,?,\'pending\',?,?)')
     .run(id, operator.id, body.capability, wallet, inputHash, challenge, expiresAt, now());
   return { approvalId: id, operator: operator.name, capability: body.capability, wallet, inputHash, challenge, expiresAt };
@@ -606,7 +668,7 @@ async function executeGatewaySkill(skill, input = {}, payment = null) {
       method: manifest.method || 'GET', redirect: 'follow', signal: AbortSignal.timeout(20_000),
       headers: {
         Accept: manifest.responseType === 'html' ? 'text/html,application/xhtml+xml' : 'application/json',
-        'User-Agent': 'CennomoGateway/1.0 (+https://cennomo.network)',
+        'User-Agent': 'TardumoGateway/1.0 (+https://nuttumrunit.github.io/Cennomo/)',
         ...(manifest.body ? { 'Content-Type': 'application/json' } : {})
       },
       ...(manifest.body ? { body: JSON.stringify(manifest.body) } : {})
@@ -796,7 +858,7 @@ async function verifyBurn(signature, wallet) {
     const uiAmount = Number(info.tokenAmount?.uiAmountString ?? info.tokenAmount?.uiAmount ?? NaN);
     return info.authority === wallet && info.mint === config.tokenMint && uiAmount >= config.burnAmount;
   });
-  if (!valid) throw Object.assign(new Error('transaction does not contain the required CENNOMO burn'), { status: 409 });
+  if (!valid) throw Object.assign(new Error('transaction does not contain the required TARDUMO burn'), { status: 409 });
   return transaction;
 }
 
@@ -1175,7 +1237,7 @@ const scheduler = setInterval(() => {
 }, 15_000);
 
 server.listen(config.port, config.host, () => {
-  console.log(`Cennomo API and web server: http://${config.host}:${config.port}`);
+  console.log(`Tardumo API and web server: http://${config.host}:${config.port}`);
   console.log(`Solana cluster: ${config.cluster}; token mint: ${config.tokenMint || 'TBA'}`);
 });
 

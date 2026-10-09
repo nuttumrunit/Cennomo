@@ -61,7 +61,7 @@ async function inspectUrl(url) {
     try {
       response = await fetch(url, {
         redirect: 'follow', signal: AbortSignal.timeout(20_000),
-        headers: { 'User-Agent': 'CennomoOperator/1.0 (+https://cennomo.network)' }
+        headers: { 'User-Agent': 'TardumoAgent/1.0 (+https://nuttumrunit.github.io/Cennomo/)' }
       });
       break;
     } catch (error) {
@@ -88,7 +88,7 @@ async function runProbe(probe) {
         redirect: 'follow', signal: AbortSignal.timeout(20_000),
         headers: {
           Accept: probe.responseType === 'html' ? 'text/html,application/xhtml+xml' : 'application/json',
-          'User-Agent': 'CennomoOperator/1.0 (+https://cennomo.network)',
+          'User-Agent': 'TardumoAgent/1.0 (+https://nuttumrunit.github.io/Cennomo/)',
           ...(probe.body ? { 'Content-Type': 'application/json' } : {})
         },
         ...(probe.body ? { body: JSON.stringify(probe.body) } : {})
@@ -149,7 +149,7 @@ async function validateCredential(manifest, operator) {
   let url;
   let method = 'GET';
   let body;
-  const requestHeaders = { Accept: 'application/json', 'User-Agent': 'CennomoOperator/1.0 (+https://cennomo.network)' };
+  const requestHeaders = { Accept: 'application/json', 'User-Agent': 'TardumoAgent/1.0 (+https://nuttumrunit.github.io/Cennomo/)' };
   if (manifest.territory === 'notion') {
     url = 'https://api.notion.com/v1/users/me';
     requestHeaders.Authorization = `Bearer ${secret}`;
@@ -158,7 +158,7 @@ async function validateCredential(manifest, operator) {
     url = 'https://api.stripe.com/v1/account';
     requestHeaders.Authorization = `Bearer ${secret}`;
   } else if (manifest.territory === 'linear') {
-    url = 'https://api.linear.app/graphql'; method = 'POST'; body = JSON.stringify({ query: 'query CennomoCredentialCheck { viewer { id } }' });
+    url = 'https://api.linear.app/graphql'; method = 'POST'; body = JSON.stringify({ query: 'query TardumoCredentialCheck { viewer { id } }' });
     requestHeaders.Authorization = secret;
     requestHeaders['Content-Type'] = 'application/json';
   } else if (manifest.territory === 'figma') {
@@ -740,7 +740,7 @@ async function cycle() {
   }
 }
 
-console.log(`Cennomo worker connected to ${apiBase}`);
+console.log(`Tardumo worker connected to ${apiBase}`);
 console.log(`Chrome: ${chrome}`);
 console.log(`Worker ID: ${workerId}`);
 void liveLoop();
