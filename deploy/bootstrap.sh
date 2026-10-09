@@ -35,3 +35,5 @@ export CENNOMO_HOST
 docker compose -f docker-compose.production.yml up -d --build --remove-orphans
 docker image prune -f
 docker compose -f docker-compose.production.yml ps
+sleep 5
+docker compose -f docker-compose.production.yml logs --tail=120 cennomo
