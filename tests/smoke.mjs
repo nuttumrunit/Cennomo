@@ -84,7 +84,7 @@ await page.click('[data-manual-target="deployment"]');
 await check('Manual Deployment chapter works', () => page.$eval('#manual-deployment', node => node.classList.contains('active')));
 
 await check('X link configured', () => page.$eval('.x-link', node => node.href === 'https://x.com/cennomonx'));
-await check('Hugging Face source link configured', () => page.$eval('.hf-link', node => node.href === 'https://huggingface.co/spaces/Cennomo/Cennomo/tree/main'));
+await check('Hugging Face source link configured', () => page.$eval('.hf-link', node => node.href === 'https://huggingface.co/spaces/tardumo/Tardumo/tree/main'));
 await check('Tardumo branding configured', () => page.$eval('.wordmark', node => node.textContent === 'Tardumo'));
 await check('Tardumo logo configured', () => page.$eval('.brand img', node => node.getAttribute('src') === 'tardumo-logo.png'));
 await check('Tardigrade navigation configured', () => page.$eval('[data-route="operators"]', node => node.textContent === 'tardigrades'));
