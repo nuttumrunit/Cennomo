@@ -1,0 +1,33 @@
+name: Backend diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/cennomo
+          chmod 600 ~/.ssh/cennomo
+          ssh-keyscan -T 20 -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Inspect backend
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+        run: |
+          ssh -i ~/.ssh/cennomo -o IdentitiesOnly=yes root@"$SERVER_HOST" <<'REMOTE'
+          set -eu
+          cd /opt/cennomo
+          docker compose -f docker-compose.production.yml ps
+          docker compose -f docker-compose.production.yml logs --tail 250 cennomo
+          find streams -maxdepth 2 -type f -printf '%p %s bytes\n' | sort | tail -80
+          REMOTE
