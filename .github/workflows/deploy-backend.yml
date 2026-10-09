@@ -24,7 +24,7 @@ jobs:
         env:
           SERVER_HOST: ${{ vars.CENNOMO_SERVER_HOST }}
           BACKEND_HOST: ${{ vars.CENNOMO_BACKEND_HOST }}
-          WEB_ORIGIN: https://nuttumrunit.github.io,https://cennomo-cennomo.hf.space,https://cennomo.run,https://www.cennomo.run
+          WEB_ORIGIN: https://nuttumrunit.github.io,https://tardumo-tardumo.static.hf.space,https://tardumo.fun,https://www.tardumo.fun
         run: |
           ssh -i ~/.ssh/cennomo -o IdentitiesOnly=yes root@"$SERVER_HOST" \
             "CENNOMO_HOST='$BACKEND_HOST' CENNOMO_WEB_ORIGIN='$WEB_ORIGIN' bash -s" <<'REMOTE'
