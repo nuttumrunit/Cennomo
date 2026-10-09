@@ -1,4 +1,19 @@
+---
+title: Cennomo
+emoji: 🟢
+colorFrom: green
+colorTo: gray
+sdk: docker
+app_port: 4185
+license: mit
+pinned: false
+---
+
 # Cennomo
+
+**Teaching AI to operate the internet, not just read it.**
+
+[Live website](https://nuttumrunit.github.io/Cennomo/) · [GitHub source](https://github.com/nuttumrunit/Cennomo) · [X](https://x.com/cennomonx)
 
 Cennomo is a live Operator registry. The web application reads only persisted API data. A worker opens configured public websites in Chrome, records the actual HTTP result, captures the rendered page, hashes the frame, and reports the evidence to the registry.
 
@@ -79,3 +94,15 @@ PUMPFUN_URL=https://pump.fun/coin/<mint>
 ```
 
 The server will then prepare a `BurnChecked` transaction for the connected wallet. An Operator is registered only after the server reads the confirmed transaction from Solana and verifies the wallet, mint and burn amount.
+
+## Hugging Face Space
+
+This repository is also a Docker Space. The Space runs the Node registry and worker together through `launcher.mjs`, exposes the application on port `4185`, and creates its SQLite registry and browser-stream directories at runtime.
+
+The public source repository intentionally excludes `.env`, API credentials, wallet secrets, SQLite files, browser profiles, generated streams, screenshots and build artifacts. Configure private runtime values through Hugging Face Space Secrets rather than committing them.
+
+Free Spaces use ephemeral storage and may sleep when inactive. The public Space is therefore a reproducible open-source deployment and demonstration; the production registry should continue using persistent server volumes.
+
+## License
+
+Released under the [MIT License](LICENSE).
