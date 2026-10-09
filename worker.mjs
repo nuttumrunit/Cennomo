@@ -224,6 +224,8 @@ let liveBrowser = null;
 let liveBrowserLaunch = null;
 let liveSequence = 0;
 const livePages = new Map();
+const liveSessions = new Map();
+const liveFrameState = new Map();
 const liveFailures = new Map();
 const wait = ms => new Promise(resolveWait => setTimeout(resolveWait, ms));
 
@@ -242,7 +244,7 @@ async function ensureLiveBrowser() {
       ]
     });
     liveBrowser = browser;
-    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null; livePages.clear(); });
+    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null; livePages.clear(); liveSessions.clear(); liveFrameState.clear(); });
     const initial = (await browser.pages())[0];
     if (initial) await initial.close().catch(() => {});
     return browser;
@@ -263,42 +265,39 @@ async function createLivePage(operator) {
       if (page.url() === 'about:blank') throw error;
       console.warn(`${operator.name}: navigation settled partially: ${error.message}`);
     }
+    const session = await page.createCDPSession();
     livePages.set(operator.name, page);
+    liveSessions.set(operator.name, session);
+    liveFrameState.set(operator.name, { busy: false, lastPublished: 0 });
+    session.on('Page.screencastFrame', payload => {
+      void session.send('Page.screencastFrameAck', { sessionId: payload.sessionId }).catch(() => {});
+      const state = liveFrameState.get(operator.name);
+      if (!state || state.busy || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
+      state.busy = true;
+      state.lastPublished = Date.now();
+      void publishLiveFrame(operator, payload.data)
+        .catch(error => console.warn(`${operator.name}: screencast publish failed: ${error.message}`))
+        .finally(() => { const current = liveFrameState.get(operator.name); if (current) current.busy = false; });
+    });
+    await session.send('Page.startScreencast', { format: 'jpeg', quality: 64, maxWidth: 1120, maxHeight: 630, everyNthFrame: 1 });
     return page;
   } catch (error) {
     await page.close().catch(() => {});
+    livePages.delete(operator.name);
+    liveSessions.delete(operator.name);
+    liveFrameState.delete(operator.name);
     throw error;
   }
 }
 
-async function captureLiveFrame(operator, page) {
-  await page.evaluate(() => {
-    const root = document.scrollingElement || document.documentElement;
-    const limit = Math.max(0, root.scrollHeight - innerHeight);
-    const step = Math.max(140, Math.round(innerHeight * 0.28));
-    const next = scrollY + step >= limit - 8 ? 0 : scrollY + step;
-    scrollTo({ top: next, behavior: 'instant' });
-  }).catch(() => {});
-  await wait(180);
+async function publishLiveFrame(operator, encodedFrame) {
   const folder = resolve(streamRoot, operator.name);
   mkdirSync(folder, { recursive: true });
   const sequence = ++liveSequence;
   const filename = `live-${Date.now()}-${sequence}.jpg`;
   const target = resolve(folder, filename);
-  const session = await page.createCDPSession();
-  let bytes;
-  let captured = false;
-  try {
-    const shot = await Promise.race([
-      session.send('Page.captureScreenshot', { format: 'jpeg', quality: 64, fromSurface: true, captureBeyondViewport: false }),
-      wait(6_000).then(() => { throw new Error('live frame timed out'); })
-    ]);
-    captured = true;
-    bytes = Buffer.from(shot.data, 'base64');
-    writeFileSync(target, bytes);
-  } finally {
-    if (captured) await session.detach().catch(() => {});
-  }
+  const bytes = Buffer.from(encodedFrame, 'base64');
+  writeFileSync(target, bytes);
   const proof = createHash('sha256').update(bytes).digest('hex');
   const oldFrames = readdirSync(folder).filter(file => /^live-\d+-\d+\.jpg$/.test(file)).sort().slice(0, -4);
   for (const oldFrame of oldFrames) {
@@ -317,7 +316,7 @@ async function liveLoop() {
       const operators = Array.isArray(snapshot.operators) ? snapshot.operators : [];
       const activeNames = new Set(operators.map(operator => operator.name));
       for (const [name, page] of livePages) {
-        if (!activeNames.has(name)) { await page.close().catch(() => {}); livePages.delete(name); }
+        if (!activeNames.has(name)) { await page.close().catch(() => {}); livePages.delete(name); liveSessions.delete(name); liveFrameState.delete(name); }
       }
       const missing = operators.filter(operator => !livePages.has(operator.name));
       await Promise.allSettled(missing.map(async operator => {
@@ -328,7 +327,16 @@ async function liveLoop() {
         const page = livePages.get(operator.name);
         if (!page || page.isClosed()) continue;
         try {
-          await captureLiveFrame(operator, page);
+          await Promise.race([
+            page.evaluate(() => {
+              const root = document.scrollingElement || document.documentElement;
+              const limit = Math.max(0, root.scrollHeight - innerHeight);
+              const step = Math.max(140, Math.round(innerHeight * 0.28));
+              const next = scrollY + step >= limit - 8 ? 0 : scrollY + step;
+              scrollTo({ top: next, behavior: 'instant' });
+            }),
+            wait(2_000).then(() => { throw new Error('live page interaction timed out'); })
+          ]);
           liveFailures.set(operator.name, 0);
         }
         catch (error) {
@@ -338,6 +346,8 @@ async function liveLoop() {
           if (failures >= 3) {
             await Promise.race([page.close().catch(() => {}), wait(2_000)]);
             livePages.delete(operator.name);
+            liveSessions.delete(operator.name);
+            liveFrameState.delete(operator.name);
             liveFailures.delete(operator.name);
           }
         }
