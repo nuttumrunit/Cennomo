@@ -3,8 +3,8 @@ title: Cennomo
 emoji: 🟢
 colorFrom: green
 colorTo: gray
-sdk: docker
-app_port: 4185
+sdk: static
+app_file: index.html
 license: mit
 pinned: false
 ---
@@ -97,11 +97,11 @@ The server will then prepare a `BurnChecked` transaction for the connected walle
 
 ## Hugging Face Space
 
-This repository is also a Docker Space. The Space runs the Node registry and worker together through `launcher.mjs`, exposes the application on port `4185`, and creates its SQLite registry and browser-stream directories at runtime.
+This repository is also a free Static Space. The Space serves the production frontend and connects it to the separately hosted Cennomo API through the public `CENNOMO_API_ORIGIN` Space variable. The complete Node registry, worker, Docker deployment, tests and frontend source remain available in this same repository.
 
 The public source repository intentionally excludes `.env`, API credentials, wallet secrets, SQLite files, browser profiles, generated streams, screenshots and build artifacts. Configure private runtime values through Hugging Face Space Secrets rather than committing them.
 
-Free Spaces use ephemeral storage and may sleep when inactive. The public Space is therefore a reproducible open-source deployment and demonstration; the production registry should continue using persistent server volumes.
+Running the registry and worker inside a Hugging Face Docker Space requires a paid Hugging Face plan. The current Static Space keeps the open-source frontend available without paid compute, while the production registry continues using persistent server volumes. Anyone can clone this repository and run the complete stack locally or on their own Docker host.
 
 ## License
 
