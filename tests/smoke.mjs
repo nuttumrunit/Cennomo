@@ -61,14 +61,14 @@ await check('Treasury value rendered', () => page.$eval('.treasury-total strong'
 await check('Treasury events rendered', () => page.$eval('#treasuryEvents', node => node.children.length > 0));
 await check('Treasury wallet links to Solscan', () => page.$eval('#treasuryExplorer', node => !node.hidden && node.href.startsWith('https://solscan.io/account/')));
 await check('Treasury reports real settlement counters', () => page.$eval('#treasurySettlements', node => /^\d+$/.test(node.textContent.trim())));
-await check('Treasury reports launch address ready', () => page.$eval('#treasuryPhase', node => node.textContent === 'LAUNCH ADDRESS READY'));
-await check('Treasury keeps official CA pending', () => page.$eval('#treasuryMint', node => node.textContent === 'TBA'));
-await check('Treasury links Pump.fun homepage', () => page.$eval('#treasuryPumpfun', node => node.href === 'https://pump.fun/'));
+await check('Treasury reports token live', () => page.$eval('#treasuryPhase', node => node.textContent === 'TOKEN LIVE'));
+await check('Treasury publishes official CA', () => page.$eval('#treasuryMint', node => node.textContent === 'Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
+await check('Treasury links official Pump.fun coin', () => page.$eval('#treasuryPumpfun', node => node.href === 'https://pump.fun/coin/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
 await check('Treasury publishes launch tax address', () => page.$eval('#treasuryWallet', node => node.textContent === 'AoFRLLN3GjGcz5BxNuRTqLNDYSgrbhmYggUNotbDAHNF'));
 await check('Treasury heading is neutral', () => page.$eval('#route-treasury .section-head b', node => node.textContent === 'NETWORK TREASURY'));
 
 await page.click('[data-route="deploy"]');
-await check('Deploy correctly locked without CA', () => page.$eval('#spawnButton', node => node.disabled && node.textContent.includes('TBA')));
+await check('Deploy awaits wallet with live CA', () => page.$eval('#spawnButton', node => !node.disabled && node.textContent.includes('connect wallet')));
 await page.click('#connectWallet');
 await page.waitForSelector('#walletModal.open');
 await check('Wallet selector opens', () => page.$eval('#walletModal', node => node.getAttribute('aria-hidden') === 'false'));
@@ -88,8 +88,8 @@ await check('Hugging Face source link configured', () => page.$eval('.hf-link', 
 await check('Tardumo branding configured', () => page.$eval('.wordmark', node => node.textContent === 'Tardumo'));
 await check('Tardumo logo configured', () => page.$eval('.brand img', node => node.getAttribute('src') === 'tardumo-logo.png'));
 await check('Tardigrade navigation configured', () => page.$eval('[data-route="operators"]', node => node.textContent === 'tardigrades'));
-await check('CA remains TBA', () => page.$eval('.ca-row code', node => node.textContent === 'TBA'));
-await check('Pump link uses homepage', () => page.$eval('.buy', node => node.href === 'https://pump.fun/'));
+await check('Official CA configured', () => page.$eval('.ca-row code', node => node.textContent === 'Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
+await check('Pump link uses official coin', () => page.$eval('.buy', node => node.href === 'https://pump.fun/coin/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
 
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
 await page.goto(`${base}#live`, { waitUntil: 'networkidle2', timeout: 30_000 });

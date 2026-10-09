@@ -40,9 +40,9 @@ services:
       - key: CENNOMO_BURN_AMOUNT
         value: 10000
       - key: CENNOMO_TOKEN_MINT
-        value: ""
+        value: Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump
       - key: PUMPFUN_URL
-        value: https://pump.fun/
+        value: https://pump.fun/coin/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump
       - key: CENNOMO_TREASURY_ADDRESS
         value: AoFRLLN3GjGcz5BxNuRTqLNDYSgrbhmYggUNotbDAHNF
       - key: CENNOMO_DEFAULT_CALL_FEE_LAMPORTS

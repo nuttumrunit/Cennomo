@@ -30,7 +30,7 @@ Tardumo is a live registry of Tardigrade Agents. The web application reads only 
 - Solana payment intents and a 70/20/10 settlement ledger, locked until launch configuration exists.
 - Solana Wallet Standard discovery and connection.
 - Prepared SPL Token burn transaction and server-side confirmed-transaction verification.
-- The Deploy action remains locked while `CENNOMO_TOKEN_MINT` is empty.
+- The Deploy action prepares a 10,000 $TARDUMO Token-2022 burn and creates a Tardigrade Agent only after on-chain confirmation.
 
 No sample skills, balances, rewards, success rates or Tardigrade Agent events are generated.
 
@@ -86,11 +86,11 @@ After the backend has an HTTPS address, create a GitHub repository variable name
 After the Pump.fun mint exists, configure:
 
 ```env
-CENNOMO_TOKEN_MINT=<real mint address>
+CENNOMO_TOKEN_MINT=Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump
 CENNOMO_BURN_AMOUNT=10000
 SOLANA_CLUSTER=mainnet-beta
 SOLANA_RPC_URL=<production RPC endpoint>
-PUMPFUN_URL=https://pump.fun/coin/<mint>
+PUMPFUN_URL=https://pump.fun/coin/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump
 ```
 
 The server will then prepare a `BurnChecked` transaction for the connected wallet. A Tardigrade Agent is registered only after the server reads the confirmed transaction from Solana and verifies the wallet, mint and burn amount.
