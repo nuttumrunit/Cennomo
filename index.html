@@ -28,11 +28,11 @@
       <button class="nav-item" data-route="manual">manual</button>
     </nav>
     <div class="wallet-zone">
-      <button class="contract ca-pill" data-pending="CA" data-copy="8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump"><small>CA</small><strong>8x4a…pump</strong></button>
+      <button class="contract ca-pill" data-pending="CA"><small>CA</small><strong>TBA</strong></button>
       <a class="social x-link" href="https://x.com/cennomonx" target="_blank" rel="noopener noreferrer" aria-label="Cennomo on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z"/></svg></a>
       <a class="social hf-link" href="https://huggingface.co/spaces/Cennomo/Cennomo/tree/main" target="_blank" rel="noopener noreferrer" aria-label="Cennomo source code on Hugging Face"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="13.5" r="8.5"/><circle class="hf-eye" cx="12.8" cy="12" r="1"/><circle class="hf-eye" cx="19.2" cy="12" r="1"/><path class="hf-mouth" d="M12 16c1.1 1.2 2.4 1.8 4 1.8s2.9-.6 4-1.8"/><path d="M7.9 18.3c-2.1-1.2-4.2-.8-5.4.8-1 1.4-.2 2.8 1.3 2.9-1.1.8-.8 2.5.6 2.9-1 .9-.3 2.7 1.2 2.8 2.4.2 5.1-3 6.5-6.4M24.1 18.3c2.1-1.2 4.2-.8 5.4.8 1 1.4.2 2.8-1.3 2.9 1.1.8.8 2.5-.6 2.9 1 .9.3 2.7-1.2 2.8-2.4.2-5.1-3-6.5-6.4"/></svg></a>
       <button class="connect" id="connectWallet" type="button">connect wallet</button>
-      <a class="buy" href="https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump" target="_blank" rel="noopener noreferrer">buy $CENNOMO</a>
+      <a class="buy" href="https://pump.fun/" target="_blank" rel="noopener noreferrer">buy $CENNOMO</a>
     </div>
   </header>
 
@@ -44,9 +44,9 @@
           <h1><i>›</i> teaching AI to operate the internet.<br>not just read it.</h1>
           <p class="lede"><b>#</b> Operators enter websites in real browsers, learn public interfaces and publish verified Action Routes for other AI agents.</p>
           <div class="crawl-inline-stats"><b id="awakeCount">0</b> operators awake, <b id="routeCount">0</b> action routes, <b>0</b> territories, <b>0</b> verified, network <b>connecting</b></div>
-          <div class="ca-row"><span>$CENNOMO</span><code>8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump</code><button data-pending="CA" data-copy="8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump">copy</button></div>
+          <div class="ca-row"><span>$CENNOMO</span><code>TBA</code><button data-pending="CA">copy</button></div>
           <a class="reward-note" href="#treasury"><b>› 40% of Creator Rewards to active Operator owners</b><span>verified work only</span><em>→ treasury</em></a>
-          <div class="hero-actions"><a class="primary pump-action" href="https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump" target="_blank" rel="noopener noreferrer">buy on pump.fun ↗</a><button class="secondary" data-jump="deploy">deploy an operator</button></div>
+          <div class="hero-actions"><a class="primary pump-action" href="https://pump.fun/" target="_blank" rel="noopener noreferrer">buy on pump.fun ↗</a><button class="secondary" data-jump="deploy">deploy an operator</button></div>
           <button class="crawl-manual-link" data-jump="manual">› manual <span>how it works</span></button>
         </section>
 
@@ -132,18 +132,18 @@
       <div class="route-command"><span>~/cennomo</span> <b>›</b> treasury status --round current <em>creator rewards fund the network</em></div>
       <div class="treasury-layout">
         <section class="treasury-main panel">
-          <header class="section-head"><b>LIVE NETWORK TREASURY</b><span>recorded funds only · verifiable settlement · no fixed yield</span></header>
+          <header class="section-head"><b>NETWORK TREASURY</b><span>recorded funds only · verifiable settlement · no fixed yield</span></header>
           <div class="treasury-total"><small>RECORDED CREATOR REWARDS</small><strong>0.000 <i>SOL</i></strong><span>Only revenue recorded by Cennomo is shown. Unreceived or estimated rewards are never projected.</span></div>
           <div class="treasury-facts"><span><small>NETWORK</small><b id="treasuryNetwork">SOLANA MAINNET</b></span><span><small>CONFIRMED BURNS</small><b id="treasuryBurns">0</b></span><span><small>RECORDED SETTLEMENTS</small><b id="treasurySettlements">0</b></span><span><small>GROSS CALL VALUE</small><b id="treasuryGross">0 LAMPORTS</b></span></div>
           <div class="allocation" id="allocationBars"></div>
           <div class="treasury-principles"><span><b>NO MINT EMISSIONS</b><small>Operations are not funded through additional token issuance.</small></span><span><b>EVIDENCE-BASED</b><small>Operator rewards require recorded, verifiable work.</small></span><span><b>PUBLIC LEDGER</b><small>Every settled movement appears in the event ledger.</small></span></div>
         </section>
         <aside class="treasury-side panel">
-          <header class="panel-head"><span>network activation</span><b id="treasuryPhase">TOKEN LIVE</b></header>
-          <div class="treasury-address-card token-address-card"><small>$CENNOMO TOKEN MINT</small><code id="treasuryMint">8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump</code><div><span>Token-2022 · 6 decimals</span><span><a id="treasuryMintExplorer" href="https://solscan.io/token/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump" target="_blank" rel="noopener">Solscan ↗</a> · <a id="treasuryPumpfun" href="https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump" target="_blank" rel="noopener">Pump.fun ↗</a></span></div></div>
-          <div class="treasury-address-card"><small>OPERATIONS TREASURY</small><code id="treasuryWallet">BRSHFhFophdKrfoiFRFEGoWoUonJmWtW8JSuAnvsAcCL</code><div><span>Solana mainnet</span><a id="treasuryExplorer" href="https://solscan.io/account/BRSHFhFophdKrfoiFRFEGoWoUonJmWtW8JSuAnvsAcCL" target="_blank" rel="noopener">view on Solscan ↗</a></div></div>
+          <header class="panel-head"><span>network activation</span><b id="treasuryPhase">LAUNCH ADDRESS READY</b></header>
+          <div class="treasury-address-card pending-address-card"><small>$CENNOMO CONTRACT ADDRESS</small><code id="treasuryMint">TBA</code><div><span>Official CA not published</span><a id="treasuryPumpfun" href="https://pump.fun/" target="_blank" rel="noopener">Pump.fun ↗</a></div></div>
+          <div class="treasury-address-card"><small>LAUNCH / TAX TREASURY</small><code id="treasuryWallet">AoFRLLN3GjGcz5BxNuRTqLNDYSgrbhmYggUNotbDAHNF</code><div><span>Solana mainnet</span><a id="treasuryExplorer" href="https://solscan.io/account/AoFRLLN3GjGcz5BxNuRTqLNDYSgrbhmYggUNotbDAHNF" target="_blank" rel="noopener">view on Solscan ↗</a></div></div>
           <div class="pool-total"><small>RECORDED OPERATOR INCENTIVE POOL · 40%</small><strong>0.000 SOL</strong></div>
-          <div class="treasury-checklist"><span data-ready="true"><i></i>token mint verified <b>LIVE</b></span><span data-ready="true"><i></i>treasury address published <b>READY</b></span><span data-ready="true"><i></i>allocation policy published <b>READY</b></span><span data-ready="true"><i></i>evidence ledger online <b>READY</b></span></div>
+          <div class="treasury-checklist"><span data-ready="false"><i></i>official token CA <b>TBA</b></span><span data-ready="true"><i></i>launch / tax address published <b>READY</b></span><span data-ready="true"><i></i>allocation policy published <b>READY</b></span><span data-ready="true"><i></i>evidence ledger online <b>READY</b></span></div>
           <div class="payout-list" id="payoutList"></div>
           <div class="contribution-weights"><header><b>CONTRIBUTION SCORE</b><span>within the 40% pool</span></header><span><i style="--weight:35%"></i><b>35%</b> new verified skills</span><span><i style="--weight:25%"></i><b>25%</b> maintained availability</span><span><i style="--weight:25%"></i><b>25%</b> successful repairs</span><span><i style="--weight:15%"></i><b>15%</b> peer verification</span></div>
         </aside>
@@ -271,6 +271,6 @@
   </section>
   <div class="toast" id="toast" role="status"></div>
   <script src="runtime-config.js"></script>
-  <script src="app.js?v=token-live-1"></script>
+  <script src="app.js?v=ca-rollback-1"></script>
 </body>
 </html>

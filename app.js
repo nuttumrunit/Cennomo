@@ -35,20 +35,18 @@ function drawTerritories(){const c=$('#territoryCanvas');if(!c||!c.clientWidth)r
 
 function renderTreasury(){
   const t=R.data.treasury,c=R.data.config,m=R.data.metrics,address=t.address||c.treasuryAddress||'',mint=c.tokenMint||'';
-  const launched=Boolean(mint),treasuryReady=Boolean(address),phase=launched?'TOKEN LIVE':'NOT CONFIGURED';
+  const launched=Boolean(mint),treasuryReady=Boolean(address),phase=launched?'TOKEN LIVE':treasuryReady?'LAUNCH ADDRESS READY':'NOT CONFIGURED';
   text('.treasury-total strong',Number(t.creatorRewardsSol).toFixed(3)+' SOL');
   text('.pool-total strong',Number(t.incentivePoolSol).toFixed(3)+' SOL');
   text('#treasuryNetwork',String(c.cluster||'mainnet-beta').replace('-beta','').toUpperCase());
   text('#treasuryBurns',`${m.burns} / ${Number(m.tokensBurned).toLocaleString()} TOKENS`);
   text('#treasurySettlements',m.settlements||0);
   text('#treasuryGross',`${Number(m.grossCallLamports||0).toLocaleString()} LAMPORTS`);
-  text('#treasuryMint',mint||'NOT CONFIGURED');
+  text('#treasuryMint',mint||'TBA');
   text('#treasuryWallet',address||'NOT CONFIGURED');
   text('#treasuryPhase',phase);
-  const mintExplorer=$('#treasuryMintExplorer');
-  if(mintExplorer){mintExplorer.hidden=!mint;mintExplorer.href=mint?`https://solscan.io/token/${encodeURIComponent(mint)}`:'#'}
   const pumpfun=$('#treasuryPumpfun');
-  if(pumpfun){pumpfun.hidden=!mint;pumpfun.href=c.pumpfunUrl||'#'}
+  if(pumpfun){pumpfun.hidden=false;pumpfun.href=c.pumpfunUrl||'https://pump.fun/'}
   const explorer=$('#treasuryExplorer');
   if(explorer){explorer.hidden=!address;explorer.href=address?`https://solscan.io/account/${encodeURIComponent(address)}`:'#'}
   const allocation=$('#allocationBars');
@@ -60,14 +58,14 @@ function renderTreasury(){
     allocation.append(row);
   });
   const checks=$$('.treasury-checklist>span');
-  if(checks[0]){checks[0].dataset.ready=String(launched);$('b',checks[0]).textContent=launched?'LIVE':'MISSING'}
+  if(checks[0]){checks[0].dataset.ready=String(launched);$('b',checks[0]).textContent=launched?'LIVE':'TBA'}
   if(checks[1]){checks[1].dataset.ready=String(treasuryReady);$('b',checks[1]).textContent=treasuryReady?'READY':'MISSING'}
   const settlementState=c.settlementEnabled?'ACTIVE':'NOT ENABLED';
-  const notice=`Token and Treasury are live. Creator Rewards, burns and settlements remain at zero until independently recorded; paid skill-call settlement is ${settlementState.toLowerCase()}.`;
+  const notice=launched?`Token and Treasury are configured. Creator Rewards, burns and settlements remain at zero until independently recorded; paid skill-call settlement is ${settlementState.toLowerCase()}.`:`The launch / tax address is published. The official token CA remains TBA, so token burns and paid settlement stay locked.`;
   $('#payoutList').innerHTML=`<div class="treasury-status-card"><small>CURRENT RECORDED WINDOW</small><b>${m.burns} confirmed burns · ${Number(m.tokensBurned).toLocaleString()} tokens</b><p>${notice}</p></div>`;
   const rows=[
-    ['token mint',mint||'NOT CONFIGURED',launched?'verified':'missing'],
-    ['treasury wallet',address||'NOT CONFIGURED',treasuryReady?'published':'missing'],
+    ['official token CA',mint||'TBA',launched?'verified':'awaiting'],
+    ['launch / tax address',address||'NOT CONFIGURED',treasuryReady?'published':'missing'],
     ['creator rewards',Number(t.creatorRewardsSol).toFixed(3)+' SOL',Number(t.creatorRewardsSol)>0?'recorded':'none recorded'],
     ['skill calls',`${m.successfulSkillCalls||0} succeeded`,m.skillCalls?'recorded':'none recorded'],
     ['paid settlement',`${m.settlements||0} recorded`,settlementState.toLowerCase()]
