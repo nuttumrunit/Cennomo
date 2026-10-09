@@ -269,11 +269,11 @@ async function createLivePage(operator) {
     const session = await page.createCDPSession();
     livePages.set(operator.name, page);
     liveSessions.set(operator.name, session);
-    liveFrameState.set(operator.name, { busy: false, lastPublished: 0 });
+    liveFrameState.set(operator.name, { busy: false, suspended: false, lastPublished: 0 });
     session.on('Page.screencastFrame', payload => {
       void session.send('Page.screencastFrameAck', { sessionId: payload.sessionId }).catch(() => {});
       const state = liveFrameState.get(operator.name);
-      if (!state || state.busy || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
+      if (!state || state.busy || state.suspended || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
       state.busy = true;
       state.lastPublished = Date.now();
       void publishLiveFrame(operator, payload.data)
@@ -333,7 +333,7 @@ async function liveLoop() {
               await page.bringToFront();
               const session = liveSessions.get(operator.name);
               const frameState = liveFrameState.get(operator.name);
-              const previousFrameAt = frameState?.lastPublished || 0;
+              if (frameState) frameState.suspended = true;
               if (session) {
                 await session.send('Page.stopScreencast').catch(() => {});
                 await session.send('Page.startScreencast', screencastOptions);
@@ -398,7 +398,7 @@ async function liveLoop() {
                 scan.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${innerHeight}px)` }], { duration: 1100, easing: 'linear', fill: 'forwards' });
               });
               await wait(250);
-              if (session && frameState && frameState.lastPublished === previousFrameAt && !frameState.busy) {
+              if (session && frameState) {
                 const fallback = await Promise.race([
                   session.send('Page.captureScreenshot', { format: 'jpeg', quality: 64, fromSurface: true, captureBeyondViewport: false }),
                   wait(1_500).then(() => null)
@@ -410,12 +410,15 @@ async function liveLoop() {
                   finally { frameState.busy = false; }
                 }
               }
+              if (frameState) frameState.suspended = false;
             })(),
             wait(3_000).then(() => { throw new Error('live page interaction timed out'); })
           ]);
           liveFailures.set(operator.name, 0);
         }
         catch (error) {
+          const frameState = liveFrameState.get(operator.name);
+          if (frameState) frameState.suspended = false;
           console.warn(`${operator.name}: live frame failed: ${error.message}`);
           const failures = (liveFailures.get(operator.name) || 0) + 1;
           liveFailures.set(operator.name, failures);
