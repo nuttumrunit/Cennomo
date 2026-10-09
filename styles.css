@@ -473,6 +473,70 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
   .brand{width:66px;min-width:66px;padding:0 9px}
 }
 
+/* Dense, evidence-first supporting content. */
+#route-live .stream-head,#route-live .event{grid-template-columns:68px 21% 20% minmax(0,1fr) 82px;gap:7px}
+#route-live .event-stream{overflow:auto}
+#route-live .event{align-items:center}
+#route-live .event time{color:#59655b;white-space:nowrap}
+#route-live .event b,#route-live .event strong,#route-live .event span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#route-live .event strong{color:var(--green);font-weight:500}
+#route-live .event em{text-align:right}
+
+.territory-policy{position:absolute;z-index:3;right:18px;top:72px;width:230px;border:1px solid #263027;background:rgba(0,5,1,.9);padding:12px;display:grid;gap:8px;box-shadow:0 12px 35px #0009}
+.territory-policy small{color:#69736b;font-size:7px;letter-spacing:.1em}
+.territory-policy span{display:grid;grid-template-columns:25px 1fr;align-items:center;color:#aeb7b0;font-size:8px;border-top:1px solid #161d17;padding-top:7px}
+.territory-policy span b{color:var(--green)}
+.territory-policy em{font:7px/1.5 var(--mono);color:#59635b}
+
+.skill-admission-strip{height:54px;display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid #202420;background:#010201}
+.skill-admission-strip span{padding:10px 14px;border-right:1px solid #171b18;display:flex;flex-direction:column;gap:5px}
+.skill-admission-strip span:last-child{border-right:0}
+.skill-admission-strip small{font-size:7px;color:var(--green)}
+.skill-admission-strip b{font-size:8px;color:#aab3ac;font-weight:500}
+#route-skills .skill-table{height:calc(100% - 108px)}
+
+.gateway-call-flow{margin:0 18px 15px;border:1px solid #202420;display:flex;align-items:stretch;background:#010201}
+.gateway-call-flow>span{flex:1;padding:10px;display:grid;grid-template-columns:28px 1fr;gap:3px 7px;align-items:center}
+.gateway-call-flow small{grid-row:1/3;color:var(--green);font-size:8px}
+.gateway-call-flow b{font-size:8px;color:#c0c8c2}.gateway-call-flow em{font-size:7px;color:#687169;font-style:normal}
+.gateway-call-flow>i{width:1px;background:#202420}
+
+.contribution-weights{border-top:1px solid #202420;padding:12px 16px;display:grid;gap:8px}
+.contribution-weights header{display:flex;justify-content:space-between;font-size:8px;color:#687169}
+.contribution-weights header b{color:#c2cac4}.contribution-weights>span{display:grid;grid-template-columns:1fr 35px 145px;align-items:center;gap:8px;font-size:8px;color:#7b847d}
+.contribution-weights>span i{height:3px;background:linear-gradient(90deg,var(--green) var(--weight),#172019 var(--weight))}
+.contribution-weights>span b{color:var(--green);font-weight:500}
+.treasury-main,.treasury-side{overflow:auto}
+
+.spawn-form{overflow:auto;padding-bottom:28px}
+.deployment-contract{margin-top:15px;border:1px solid #202420;display:grid;grid-template-columns:repeat(2,1fr)}
+.deployment-contract>span{padding:11px 12px;border-right:1px solid #171b18;border-bottom:1px solid #171b18;display:flex;flex-direction:column;gap:4px}
+.deployment-contract>span:nth-child(even){border-right:0}.deployment-contract>span:nth-child(n+3){border-bottom:0}
+.deployment-contract small{font-size:7px;color:#687169}.deployment-contract b{font-size:9px;color:#d0d7d2}.deployment-contract em{font-size:7px;color:var(--green);font-style:normal}
+.manual-detail-grid{margin-top:18px;border:1px solid #202420;display:grid;grid-template-columns:repeat(2,1fr)}
+.manual-detail-grid article{padding:14px 16px;min-height:92px;border-right:1px solid #171b18;border-bottom:1px solid #171b18;background:#010201}
+.manual-detail-grid article:nth-child(even){border-right:0}.manual-detail-grid article:nth-child(n+3){border-bottom:0}
+.manual-detail-grid small{display:block;color:var(--green);font-size:7px;letter-spacing:.08em;margin-bottom:8px}.manual-detail-grid b{display:block;color:#c9d1cb;font-size:10px;margin-bottom:6px}.manual-detail-grid p{margin:0!important;color:#687169!important;font-size:8px!important;line-height:1.55!important}
+.state-definitions{margin-top:18px;border:1px solid #202420;display:grid;grid-template-columns:repeat(3,1fr)}
+.state-definitions span{padding:12px 14px;display:flex;flex-direction:column;gap:5px;border-right:1px solid #171b18;border-bottom:1px solid #171b18}.state-definitions span:nth-child(3n){border-right:0}.state-definitions span:nth-child(n+4){border-bottom:0}
+.state-definitions b{font-size:8px;color:#bac3bc}.state-definitions em{font-size:7px;color:#626b64;font-style:normal}.state-definitions span:nth-child(3) b{color:var(--green)}
+.allocation-ledger{margin-top:18px;display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #202420}
+.allocation-ledger span{padding:14px 12px;display:flex;flex-direction:column;gap:6px;border-right:1px solid #171b18}.allocation-ledger span:last-child{border-right:0}.allocation-ledger small{font-size:18px;color:#8c968e}.allocation-ledger b{font-size:7px;color:#c4ccc6}.allocation-ledger em{font-size:7px;color:#606961;font-style:normal}.allocation-ledger .accent{background:#071008}.allocation-ledger .accent small,.allocation-ledger .accent b{color:var(--green)}
+
+@media(max-width:900px){
+  .territory-policy{display:none}
+  .skill-admission-strip{grid-template-columns:repeat(2,1fr);height:auto}
+  #route-skills .skill-table{height:auto}
+  .gateway-call-flow{display:grid;grid-template-columns:repeat(2,1fr)}
+  .gateway-call-flow>i{display:none}
+}
+@media(max-width:760px){
+  #route-live .stream-head,#route-live .event{grid-template-columns:58px 28% minmax(0,1fr) 70px}
+  #route-live .stream-head span:nth-child(3),#route-live .event strong{display:none}
+  .deployment-contract{grid-template-columns:1fr}.deployment-contract>span{border-right:0!important;border-bottom:1px solid #171b18!important}
+  .manual-detail-grid,.state-definitions{grid-template-columns:1fr}.manual-detail-grid article,.state-definitions span{border-right:0!important;border-bottom:1px solid #171b18!important}.allocation-ledger{grid-template-columns:repeat(2,1fr)}
+}
+
 /* CrawlNet-composition live page */
 #route-live .crawlnet-live-grid{grid-template-columns:56% 44%;grid-template-rows:70% 30%;gap:1px;background:#202620}
 #route-live .crawl-hero{display:block;padding:28px 32px 20px;background:#000;overflow:hidden}
