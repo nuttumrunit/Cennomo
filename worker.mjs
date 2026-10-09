@@ -325,7 +325,7 @@ function startLiveScrollPump() {
         state.lastPublished = Date.now();
         try {
           const frame = await session.send('Page.captureScreenshot', { format: 'jpeg', quality: 60, fromSurface: true, captureBeyondViewport: false });
-          if (frame?.data && state.operator) await publishLiveFrame(state.operator, frame.data);
+          if (frame?.data && state.operator) await publishLiveFrame(state.operator, frame.data, state.telemetry || null);
         } catch (error) {
           console.warn(`${name}: active capture failed: ${error.message}`);
         } finally { state.busy = false; }
@@ -384,7 +384,7 @@ async function createLivePage(operator) {
       if (!state || state.busy || state.suspended || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
       state.busy = true;
       state.lastPublished = Date.now();
-      void publishLiveFrame(operator, payload.data)
+      void publishLiveFrame(operator, payload.data, state.telemetry || null)
         .catch(error => console.warn(`${operator.name}: screencast publish failed: ${error.message}`))
         .finally(() => { const current = liveFrameState.get(operator.name); if (current) current.busy = false; });
     });
@@ -499,6 +499,7 @@ async function liveLoop() {
               browse.visited.add(telemetry.currentUrl.split('#')[0]);
               telemetry.auditRound = browse.round;
               telemetry.phase = 'reading';
+              if (frameState) frameState.telemetry = telemetry;
               if (telemetry.atBottom) browse.bottomSeen += 1; else browse.bottomSeen = 0;
               if (browse.bottomSeen >= 2) {
                 const next = telemetry.links.find(link => !browse.visited.has(link.url));
