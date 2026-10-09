@@ -195,6 +195,7 @@ function screenshot(name, targetUrl) {
       '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run',
       '--no-default-browser-check', '--disable-background-networking', '--disable-extensions',
       '--disable-application-cache', '--disk-cache-size=1', '--media-cache-size=1',
+      ...(process.platform === 'linux' ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
       `--user-data-dir=${profile}`, '--window-size=1280,720', '--virtual-time-budget=5000', `--screenshot=${target}`, targetUrl
     ];
     const child = spawn(chrome, args, { stdio: 'ignore', windowsHide: true });
