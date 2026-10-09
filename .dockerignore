@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+data/*.sqlite*
+data/chrome-profiles
+streams/*/next.jpg
+.*-check
+*.png
+!cennomo-logo.png
+!favicon-original.png

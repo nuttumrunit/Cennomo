@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: cennomo-api
+    runtime: docker
+    plan: 1c-2g
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    autoDeploy: true
+    maxShutdownDelaySeconds: 30
+    disk:
+      name: cennomo-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: PUBLIC_ORIGIN
+        sync: false
+      - key: CENNOMO_WEB_ORIGINS
+        sync: false
+      - key: CENNOMO_WORKER_TOKEN
+        generateValue: true
+      - key: CENNOMO_ADMIN_TOKEN
+        generateValue: true
+      - key: CENNOMO_ENCRYPTION_KEY
+        generateValue: true
+      - key: CENNOMO_WORKER_ID
+        value: render-worker-01
+      - key: CENNOMO_WORKER_INTERVAL_MS
+        value: 60000
+      - key: SOLANA_CLUSTER
+        value: mainnet-beta
+      - key: SOLANA_RPC_URL
+        value: https://api.mainnet-beta.solana.com
+      - key: CENNOMO_BURN_AMOUNT
+        value: 10000
+      - key: PUMPFUN_URL
+        value: https://pump.fun/
+      - key: CENNOMO_TREASURY_ADDRESS
+        value: BRSHFhFophdKrfoiFRFEGoWoUonJmWtW8JSuAnvsAcCL
+      - key: CENNOMO_DEFAULT_CALL_FEE_LAMPORTS
+        value: 0
