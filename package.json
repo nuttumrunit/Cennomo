@@ -11,14 +11,12 @@
     "test:smoke": "node tests/smoke.mjs",
     "test:core": "node tests/core.mjs",
     "test:capture": "node tests/capture.mjs",
-    "backup": "node backup.mjs"
-    ,"build:pages": "node build-pages.mjs"
+    "backup": "node backup.mjs",
+    "build:pages": "node build-pages.mjs"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.14",
-    "@solana/web3.js": "^1.98.4"
-  },
-  "devDependencies": {
+    "@solana/web3.js": "^1.98.4",
     "puppeteer-core": "^25.13.0"
   }
 }

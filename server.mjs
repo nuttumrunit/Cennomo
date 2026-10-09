@@ -488,7 +488,7 @@ function gatewaySkills() {
       advancedCapabilities: advanced,
       credentialGate: source?.credentialEnv ? {
         environment: source.credentialEnv,
-        configured: Boolean(process.env[source.credentialEnv]),
+        configured: Boolean(process.env[source.credentialEnv] || vaultCredential(skill.operator_id, source.credentialEnv)),
         note: 'Required only for account-scoped or mutating capabilities.'
       } : null
     };
@@ -955,6 +955,23 @@ async function api(request, response, url) {
     }
     publish('snapshot', { reason: 'operator.created' });
     return sendJson(response, 201, { ok: true, operatorId: Number(inserted.lastInsertRowid) });
+  }
+
+  const frameMatch = url.pathname.match(/^\/api\/worker\/operators\/([^/]+)\/frame$/);
+  if (request.method === 'POST' && frameMatch) {
+    if (!workerAuthorized(request)) throw Object.assign(new Error('worker authorization required'), { status: 401 });
+    const name = decodeURIComponent(frameMatch[1]);
+    const operator = db.prepare('SELECT * FROM operators WHERE name=?').get(name);
+    if (!operator) throw Object.assign(new Error('operator not found'), { status: 404 });
+    const body = await readJson(request, 4096);
+    const expectedPrefix = `/streams/${encodeURIComponent(name)}/`;
+    if (typeof body.streamPath !== 'string' || !body.streamPath.startsWith(expectedPrefix)) throw Object.assign(new Error('invalid stream path'), { status: 400 });
+    if (!/^[a-f0-9]{64}$/i.test(String(body.proof || ''))) throw Object.assign(new Error('invalid frame proof'), { status: 400 });
+    const observedAt = body.observedAt || now();
+    const sequence = Math.max(1, Number(body.sequence || 1));
+    db.prepare('UPDATE operators SET stream_path=?,last_seen=?,last_success=? WHERE id=?').run(body.streamPath, observedAt, observedAt, operator.id);
+    publish('frame', { operator: name, operatorId: operator.id, streamPath: body.streamPath, proof: body.proof, sequence, observedAt });
+    return sendJson(response, 200, { ok: true, sequence });
   }
 
   const reportMatch = url.pathname.match(/^\/api\/operators\/([^/]+)\/report$/);

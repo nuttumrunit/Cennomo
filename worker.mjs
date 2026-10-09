@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
+import puppeteer from 'puppeteer-core';
 
 const root = resolve('.');
 function loadEnvFile() {
@@ -22,6 +23,7 @@ loadEnvFile();
 const apiBase = process.env.CENNOMO_API_URL || `http://127.0.0.1:${process.env.PORT || 4185}`;
 const workerToken = process.env.CENNOMO_WORKER_TOKEN || '';
 const intervalMs = Math.max(15_000, Number(process.env.CENNOMO_WORKER_INTERVAL_MS || 60_000));
+const liveFrameIntervalMs = Math.max(2_500, Number(process.env.CENNOMO_LIVE_FRAME_INTERVAL_MS || 4_000));
 const workerId = process.env.CENNOMO_WORKER_ID || `${process.env.COMPUTERNAME || 'worker'}-${process.pid}`;
 const workerStartedAt = new Date().toISOString();
 const chrome = process.env.CHROME_PATH || (process.platform === 'win32'
@@ -218,6 +220,121 @@ function screenshot(name, targetUrl) {
   });
 }
 
+let liveBrowser = null;
+let liveBrowserLaunch = null;
+let liveSequence = 0;
+const livePages = new Map();
+const wait = ms => new Promise(resolveWait => setTimeout(resolveWait, ms));
+
+async function ensureLiveBrowser() {
+  if (liveBrowser?.connected) return liveBrowser;
+  if (liveBrowserLaunch) return liveBrowserLaunch;
+  liveBrowserLaunch = (async () => {
+    livePages.clear();
+    const browser = await puppeteer.launch({
+      executablePath: chrome,
+      headless: true,
+      args: [
+        '--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--hide-scrollbars',
+        '--no-first-run', '--no-default-browser-check', '--disable-background-networking',
+        '--disable-extensions', '--disable-application-cache', '--disk-cache-size=1', '--media-cache-size=1'
+      ]
+    });
+    liveBrowser = browser;
+    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null; livePages.clear(); });
+    const initial = (await browser.pages())[0];
+    if (initial) await initial.close().catch(() => {});
+    return browser;
+  })();
+  try { return await liveBrowserLaunch; }
+  finally { liveBrowserLaunch = null; }
+}
+
+async function createLivePage(operator) {
+  const browser = await ensureLiveBrowser();
+  const page = await browser.newPage();
+  try {
+    await page.setViewport({ width: 1120, height: 630, deviceScaleFactor: 1 });
+    page.setDefaultNavigationTimeout(30_000);
+    page.on('dialog', dialog => dialog.dismiss().catch(() => {}));
+    try { await page.goto(operator.target_url, { waitUntil: 'domcontentloaded', timeout: 30_000 }); }
+    catch (error) {
+      if (page.url() === 'about:blank') throw error;
+      console.warn(`${operator.name}: navigation settled partially: ${error.message}`);
+    }
+    livePages.set(operator.name, page);
+    return page;
+  } catch (error) {
+    await page.close().catch(() => {});
+    throw error;
+  }
+}
+
+async function captureLiveFrame(operator, page) {
+  await page.evaluate(() => {
+    const root = document.scrollingElement || document.documentElement;
+    const limit = Math.max(0, root.scrollHeight - innerHeight);
+    const step = Math.max(140, Math.round(innerHeight * 0.28));
+    const next = scrollY + step >= limit - 8 ? 0 : scrollY + step;
+    scrollTo({ top: next, behavior: 'instant' });
+  }).catch(() => {});
+  await wait(180);
+  const folder = resolve(streamRoot, operator.name);
+  mkdirSync(folder, { recursive: true });
+  const sequence = ++liveSequence;
+  const filename = `live-${Date.now()}-${sequence}.jpg`;
+  const target = resolve(folder, filename);
+  const bytes = await page.screenshot({ path: target, type: 'jpeg', quality: 72, captureBeyondViewport: false });
+  const proof = createHash('sha256').update(bytes).digest('hex');
+  const oldFrames = readdirSync(folder).filter(file => /^live-\d+-\d+\.jpg$/.test(file)).sort().slice(0, -4);
+  for (const oldFrame of oldFrames) {
+    try { unlinkSync(resolve(folder, oldFrame)); } catch {}
+  }
+  await json(`${apiBase}/api/worker/operators/${encodeURIComponent(operator.name)}/frame`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ streamPath: `/streams/${encodeURIComponent(operator.name)}/${filename}`, proof, sequence, observedAt: new Date().toISOString() })
+  });
+}
+
+async function liveLoop() {
+  for (;;) {
+    try {
+      const snapshot = await json(`${apiBase}/api/snapshot`);
+      const operators = Array.isArray(snapshot.operators) ? snapshot.operators : [];
+      const activeNames = new Set(operators.map(operator => operator.name));
+      for (const [name, page] of livePages) {
+        if (!activeNames.has(name)) { await page.close().catch(() => {}); livePages.delete(name); }
+      }
+      const missing = operators.filter(operator => !livePages.has(operator.name));
+      for (let index = 0; index < missing.length; index += 3) {
+        await Promise.allSettled(missing.slice(index, index + 3).map(async operator => {
+          try { await createLivePage(operator); }
+          catch (error) { console.warn(`${operator.name}: live page unavailable: ${error.message}`); }
+        }));
+      }
+      for (let index = 0; index < operators.length; index += 3) {
+        await Promise.allSettled(operators.slice(index, index + 3).map(async operator => {
+          const page = livePages.get(operator.name);
+          if (!page || page.isClosed()) return;
+          try { await captureLiveFrame(operator, page); }
+          catch (error) {
+            console.warn(`${operator.name}: live frame failed: ${error.message}`);
+            await page.close().catch(() => {});
+            livePages.delete(operator.name);
+          }
+        }));
+        await wait(250);
+      }
+    } catch (error) {
+      console.error(`live browser loop failed: ${error.message}`);
+      if (liveBrowser) await liveBrowser.close().catch(() => {});
+      liveBrowser = null;
+      livePages.clear();
+    }
+    await wait(liveFrameIntervalMs);
+  }
+}
+
 async function report(name, body) {
   return json(`${apiBase}/api/operators/${encodeURIComponent(name)}/report`, {
     method: 'POST',
@@ -232,7 +349,7 @@ async function runOperator(operator) {
     const manifest = manifestByName.get(operator.name) || manifestByTerritory.get(operator.territory);
     const [metadataResult, frameResult, probeResult, credentialResult] = await Promise.allSettled([
       inspectUrl(operator.target_url),
-      screenshot(operator.name, operator.target_url),
+      Promise.resolve(null),
       manifest?.probe ? runProbe(manifest.probe) : Promise.resolve(null),
       manifest?.credentialEnv && operator.credential_configured ? validateCredential(manifest, operator) : Promise.resolve(null)
     ]);
@@ -289,6 +406,7 @@ async function cycle() {
 console.log(`Cennomo worker connected to ${apiBase}`);
 console.log(`Chrome: ${chrome}`);
 console.log(`Worker ID: ${workerId}`);
+void liveLoop();
 for (;;) {
   const started = Date.now();
   try { await cycle(); }
