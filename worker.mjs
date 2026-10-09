@@ -332,6 +332,8 @@ async function liveLoop() {
             (async () => {
               await page.bringToFront();
               const session = liveSessions.get(operator.name);
+              const frameState = liveFrameState.get(operator.name);
+              const previousFrameAt = frameState?.lastPublished || 0;
               if (session) {
                 await session.send('Page.stopScreencast').catch(() => {});
                 await session.send('Page.startScreencast', screencastOptions);
@@ -343,6 +345,19 @@ async function liveLoop() {
                 const next = scrollY + step >= limit - 8 ? 0 : scrollY + step;
                 scrollTo({ top: next, behavior: 'instant' });
               });
+              await wait(250);
+              if (session && frameState && frameState.lastPublished === previousFrameAt && !frameState.busy) {
+                const fallback = await Promise.race([
+                  session.send('Page.captureScreenshot', { format: 'jpeg', quality: 64, fromSurface: true, captureBeyondViewport: false }),
+                  wait(1_500).then(() => null)
+                ]);
+                if (fallback?.data) {
+                  frameState.busy = true;
+                  frameState.lastPublished = Date.now();
+                  try { await publishLiveFrame(operator, fallback.data); }
+                  finally { frameState.busy = false; }
+                }
+              }
             })(),
             wait(2_000).then(() => { throw new Error('live page interaction timed out'); })
           ]);
