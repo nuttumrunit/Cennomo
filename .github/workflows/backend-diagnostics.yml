@@ -12,8 +12,8 @@ jobs:
     steps:
       - name: Configure SSH
         env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SERVER_HOST: ${{ vars.CENNOMO_SERVER_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.CENNOMO_SSH_PRIVATE_KEY }}
         run: |
           install -d -m 700 ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/cennomo
@@ -22,7 +22,7 @@ jobs:
 
       - name: Inspect backend
         env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_HOST: ${{ vars.CENNOMO_SERVER_HOST }}
         run: |
           ssh -i ~/.ssh/cennomo -o IdentitiesOnly=yes root@"$SERVER_HOST" <<'REMOTE'
           set -eu
