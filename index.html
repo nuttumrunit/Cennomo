@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="styles.css?v=crawlnet-live-15">
   <link rel="stylesheet" href="live-crawlnet.css?v=crawlnet-live-15">
   <link rel="stylesheet" href="console-polish.css?v=tardumo-2">
+  <link rel="stylesheet" href="tardumo-system.css?v=1">
 </head>
 <body>
   <header class="topbar">
@@ -92,7 +93,7 @@
     </section>
 
     <section class="route console-route" id="route-operators">
-      <div class="route-command"><span>~/tardumo</span> <b>›</b> tardigrades watch --all <em><b id="wallAwake">12</b> official agents</em></div>
+      <div class="route-command"><span>~/tardumo</span> <b>›</b> Tardigrades in the field <em><b id="wallAwake">12</b> official agents</em></div>
       <section class="operator-wall panel">
         <header class="wall-controls"><div class="view-switch"><button class="active" data-wall-view="screens"><u>s</u>creens</button><button data-wall-view="board"><u>b</u>oard</button></div><i></i><div class="wall-filters"><button class="active" data-wall-filter="all"><u>a</u>ll <b>10</b></button><button data-wall-filter="verified"><u>v</u>erified <b>3</b></button><button data-wall-filter="learning"><u>l</u>earning <b>2</b></button><button data-wall-filter="repairing"><u>r</u>epairing <b>2</b></button><button data-wall-filter="degrading"><u>d</u>egrading <b>1</b></button></div><span>select any screen to watch full session</span></header>
         <div class="monitor-grid" id="monitorGrid"></div>
@@ -100,7 +101,7 @@
     </section>
 
     <section class="route console-route" id="route-territories">
-      <div class="route-command"><span>~/tardumo</span> <b>›</b> territory map --activity <em>live registry data</em></div>
+      <div class="route-command"><span>~/tardumo</span> <b>›</b> Capability territories <em>live registry data</em></div>
       <div class="territory-layout">
         <section class="territory-map panel"><header class="section-head"><b>INTERNET TERRITORY MAP</b><span>live registry topology</span></header><canvas id="territoryCanvas"></canvas><div class="territory-policy"><small>TERRITORY ADMISSION</small><span><b>01</b> public interface observed</span><span><b>02</b> sandbox route reproduced</span><span><b>03</b> maintenance owner assigned</span><em>Territories are capability spaces, not ownership claims.</em></div><div class="territory-hud"><small>NETWORK SURFACE</small><b id="territoryHudCount">0 territories observed</b><span id="territoryHudEvidence">waiting for worker evidence</span></div><div class="map-axis axis-x">0x00&nbsp;&nbsp;&nbsp;&nbsp;CAPABILITY SPACE&nbsp;&nbsp;&nbsp;&nbsp;0xFF</div><div class="map-axis axis-y">PUBLIC INTERNET / READ-ONLY DISCOVERY</div><div class="map-legend"><span><i class="verified"></i>active</span><span><i class="learning"></i>observing</span><span><i class="repairing"></i>degrading</span><span><i class="open"></i>offline</span></div></section>
         <aside class="territory-feed panel"><header class="panel-head"><span>territory registry</span><b id="territoryCount">0</b></header><div class="territory-feed-head"><span>TERRITORY</span><span>AGENTS</span><span>STATE</span></div><div id="territoryList"></div><footer class="territory-foot"><span><i></i> derived from live Tardigrade Agent reports</span><b>no ownership claims</b></footer></aside>
@@ -108,12 +109,12 @@
     </section>
 
     <section class="route console-route" id="route-skills">
-      <div class="route-command"><span>~/tardumo</span> <b>›</b> skill registry --verified <em>verified routes only</em></div>
+      <div class="route-command"><span>~/tardumo</span> <b>›</b> Verified skill registry <em>verified routes only</em></div>
       <section class="skills-panel panel"><header class="section-head"><b>SKILL REGISTRY</b><span>every route is tested before it can be called</span><div class="skill-search"><input id="skillSearch" placeholder="filter territory or route" aria-label="Filter skills"><button id="skillStatus">verified</button></div></header><div class="skill-admission-strip"><span><small>01 · DISCOVER</small><b>Public interface mapped</b></span><span><small>02 · EXECUTE</small><b>Sandbox result captured</b></span><span><small>03 · REPLAY</small><b>Independent proof matched</b></span><span><small>04 · MAINTAIN</small><b>Continuous health checks</b></span></div><div class="skill-table"><div class="skill-row header"><span>SKILL</span><span>TERRITORY</span><span>TARDIGRADE</span><span>HEALTH</span><span>LAST PROOF</span><span>FEE</span><span></span></div><div id="skillRows"></div></div></section>
     </section>
 
     <section class="route console-route" id="route-gateway">
-      <div class="route-command"><span>~/tardumo</span> <b>›</b> gateway serve --protocol rest,mcp <em>real calls · persisted proofs</em></div>
+      <div class="route-command"><span>~/tardumo</span> <b>›</b> Agent gateway <em>real calls · persisted proofs</em></div>
       <div class="gateway-layout">
         <section class="gateway-main panel">
           <header class="gateway-hero"><div><small>AGENT ACCESS LAYER</small><h1>Call verified internet skills.</h1><p>Other AI agents connect here. Every successful execution runs the real public route, records a call ID and commits a SHA-256 response proof.</p></div><div class="gateway-live"><i></i><span>GATEWAY ONLINE</span><b id="gatewayToolCount">0 tools</b></div></header>
@@ -129,7 +130,7 @@
     </section>
 
     <section class="route console-route" id="route-treasury">
-      <div class="route-command"><span>~/tardumo</span> <b>›</b> treasury status --round current <em>creator rewards fund the network</em></div>
+      <div class="route-command"><span>~/tardumo</span> <b>›</b> Network treasury <em>creator rewards fund the network</em></div>
       <div class="treasury-layout">
         <section class="treasury-main panel">
           <header class="section-head"><b>NETWORK TREASURY</b><span>recorded funds only · verifiable settlement · no fixed yield</span></header>
@@ -152,7 +153,7 @@
     </section>
 
     <section class="route console-route" id="route-deploy">
-      <div class="route-command"><span>~/tardumo</span> <b>›</b> wake tardigrade --burn 10000 <em>one Tardigrade Agent · one working identity</em></div>
+      <div class="route-command"><span>~/tardumo</span> <b>›</b> Wake a tardigrade <em>one Tardigrade Agent · one working identity</em></div>
       <div class="spawn-layout">
         <section class="spawn-form panel"><header class="section-head"><b>WAKE A NEW TARDIGRADE</b><span>burning creates a working agent, not a static collectible</span></header><ol class="spawn-steps"><li class="active"><b>01</b>territory</li><li><b>02</b>identity</li><li><b>03</b>burn</li><li><b>04</b>awake</li></ol><div class="field"><label for="territorySelect">SELECT TERRITORY</label><select id="territorySelect"><option>Jupiter · DeFi operations</option><option>Wormhole · cross-chain operations</option><option>Aave · lending operations</option><option>GitHub · repository operations</option><option>Notion · workspace automation</option><option>Blender · 3D scripting</option><option>Shopify · commerce operations</option><option>Discord · community automation</option><option>Stripe · payment operations</option><option>Linear · project operations</option><option>Figma · design operations</option><option>Telegram · bot operations</option></select></div><div class="field"><label for="operatorAlias">TARDIGRADE ALIAS</label><input id="operatorAlias" maxlength="24" value="jupiter-tardigrade-25"><small>identity will be recorded against the connected wallet</small></div><div class="burn-card"><span>YOU BURN</span><b>10,000 $TARDUMO</b><em>permanently removed from supply</em></div><button class="spawn-button" id="spawnButton">connect wallet to continue</button><div class="deploy-readiness"><header><b>LAUNCH READINESS</b><span id="deployReadiness">TOKEN CA REQUIRED</span></header><div><span><small>WALLET</small><b id="deployWalletStatus">NOT CONNECTED</b></span><span><small>TOKEN MINT</small><b id="deployMintStatus">TBA</b></span><span><small>AGENT NETWORK</small><b id="deployWorkerStatus">CHECKING</b></span></div><p>A deployment is accepted only after the wallet-signed burn is confirmed on Solana. Until the real mint address is configured, this control remains safely locked.</p></div><div class="deployment-contract"><span><small>OWNER</small><b>connected Solana wallet</b><em>registry authority</em></span><span><small>DEFAULT ACCESS</small><b>public + sandbox</b><em>no inherited credentials</em></span><span><small>REWARD ACCESS</small><b>verified work only</b><em>40% contribution pool</em></span><span><small>CALL REVENUE</small><b>70% owner share</b><em>successful billable calls</em></span></div></section>
         <aside class="spawn-preview panel"><header class="panel-head"><span>registry manifest</span><b>NOT COMMITTED</b></header><div class="identity-console"><div class="identity-console-head"><b>00</b><span class="core-mark"><img src="tardumo-logo.png" alt="Tardumo"></span><div><small>PROVISIONAL TARDIGRADE AGENT</small><h2 id="previewAlias">jupiter-tardigrade-25</h2><p id="previewTerritory">territory / jupiter</p></div></div><div class="identity-hash" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="manifest-route"><span><small>01</small> DISCOVER</span><i></i><span><small>02</small> LEARN</span><i></i><span><small>03</small> VERIFY</span><i></i><span><small>04</small> PUBLISH</span></div></div><dl><dt>registry identity</dt><dd>assigned after confirmed burn</dd><dt>initial state</dt><dd>queued → discovering</dd><dt>execution boundary</dt><dd>public / sandbox only</dd><dt>owner share</dt><dd>70% qualifying call fees</dd></dl><div class="manifest-checks"><b>COMMIT REQUIREMENTS</b><span><i></i>wallet signature</span><span><i></i>10,000 token burn</span><span><i></i>on-chain confirmation</span><span><i></i>agent capacity</span></div><div class="post-burn-flow"><header><b>AFTER CONFIRMATION</b><span>automatic registry sequence</span></header><span><small>01</small><b>Burn inspected</b><em>mint, owner and amount verified</em></span><span><small>02</small><b>Identity written</b><em>wallet becomes registry authority</em></span><span><small>03</small><b>Agent queued</b><em>public and sandbox access only</em></span><span><small>04</small><b>Evidence begins</b><em>live status becomes publicly visible</em></span></div><div class="preview-foot"><span><i></i> waiting for token CA and wallet authorization</span><b>NO FUNDS SENT</b></div></aside>
@@ -160,7 +161,7 @@
     </section>
 
     <section class="route console-route" id="route-manual">
-      <div class="route-command"><span>~/tardumo</span> <b>›</b> man tardumo <em>protocol manual · prelaunch edition</em></div>
+      <div class="route-command"><span>~/tardumo</span> <b>›</b> Tardumo field guide <em>protocol manual · prelaunch edition</em></div>
       <div class="manual-layout">
         <aside class="manual-index panel">
           <b>TARDUMO(1)</b>
@@ -271,6 +272,6 @@
   </section>
   <div class="toast" id="toast" role="status"></div>
   <script src="runtime-config.js"></script>
-  <script src="app.js?v=tardumo-2"></script>
+  <script src="app.js?v=tardumo-system-1"></script>
 </body>
 </html>

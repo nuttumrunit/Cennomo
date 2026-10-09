@@ -8,7 +8,7 @@ rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 
 const assets = [
-  'index.html', 'app.js', 'styles.css', 'live-crawlnet.css', 'console-polish.css',
+  'index.html', 'app.js', 'styles.css', 'live-crawlnet.css', 'console-polish.css', 'tardumo-system.css',
   'tardumo-logo.png', 'favicon-original.png', 'favicon.svg'
 ];
 for (const asset of assets) cpSync(resolve(root, asset), resolve(output, asset));
