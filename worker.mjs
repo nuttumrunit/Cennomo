@@ -61,7 +61,7 @@ async function inspectUrl(url) {
     try {
       response = await fetch(url, {
         redirect: 'follow', signal: AbortSignal.timeout(20_000),
-        headers: { 'User-Agent': 'TardumoAgent/1.0 (+https://tardumo.fun/)' }
+        headers: { 'User-Agent': 'TardumoAgent/1.0 (+https://nuttumrunit.github.io/Cennomo/)' }
       });
       break;
     } catch (error) {
@@ -88,7 +88,7 @@ async function runProbe(probe) {
         redirect: 'follow', signal: AbortSignal.timeout(20_000),
         headers: {
           Accept: probe.responseType === 'html' ? 'text/html,application/xhtml+xml' : 'application/json',
-          'User-Agent': 'TardumoAgent/1.0 (+https://tardumo.fun/)',
+          'User-Agent': 'TardumoAgent/1.0 (+https://nuttumrunit.github.io/Cennomo/)',
           ...(probe.body ? { 'Content-Type': 'application/json' } : {})
         },
         ...(probe.body ? { body: JSON.stringify(probe.body) } : {})
@@ -149,7 +149,7 @@ async function validateCredential(manifest, operator) {
   let url;
   let method = 'GET';
   let body;
-  const requestHeaders = { Accept: 'application/json', 'User-Agent': 'TardumoAgent/1.0 (+https://tardumo.fun/)' };
+  const requestHeaders = { Accept: 'application/json', 'User-Agent': 'TardumoAgent/1.0 (+https://nuttumrunit.github.io/Cennomo/)' };
   if (manifest.territory === 'notion') {
     url = 'https://api.notion.com/v1/users/me';
     requestHeaders.Authorization = `Bearer ${secret}`;
