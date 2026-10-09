@@ -286,15 +286,17 @@ async function captureLiveFrame(operator, page) {
   const target = resolve(folder, filename);
   const session = await page.createCDPSession();
   let bytes;
+  let captured = false;
   try {
     const shot = await Promise.race([
-      session.send('Page.captureScreenshot', { format: 'jpeg', quality: 72, fromSurface: true, captureBeyondViewport: false }),
+      session.send('Page.captureScreenshot', { format: 'jpeg', quality: 64, fromSurface: true, captureBeyondViewport: false }),
       wait(12_000).then(() => { throw new Error('live frame timed out'); })
     ]);
+    captured = true;
     bytes = Buffer.from(shot.data, 'base64');
     writeFileSync(target, bytes);
   } finally {
-    await session.detach().catch(() => {});
+    if (captured) await session.detach().catch(() => {});
   }
   const proof = createHash('sha256').update(bytes).digest('hex');
   const oldFrames = readdirSync(folder).filter(file => /^live-\d+-\d+\.jpg$/.test(file)).sort().slice(0, -4);
@@ -323,19 +325,16 @@ async function liveLoop() {
           catch (error) { console.warn(`${operator.name}: live page unavailable: ${error.message}`); }
         }));
       }
-      for (let index = 0; index < operators.length; index += 3) {
-        await Promise.allSettled(operators.slice(index, index + 3).map(async operator => {
-          const page = livePages.get(operator.name);
-          if (!page || page.isClosed()) return;
-          try { await captureLiveFrame(operator, page); }
-          catch (error) {
-            console.warn(`${operator.name}: live frame failed: ${error.message}`);
-            await page.close().catch(() => {});
-            livePages.delete(operator.name);
-          }
-        }));
-        await wait(250);
-      }
+      await Promise.allSettled(operators.map(async operator => {
+        const page = livePages.get(operator.name);
+        if (!page || page.isClosed()) return;
+        try { await captureLiveFrame(operator, page); }
+        catch (error) {
+          console.warn(`${operator.name}: live frame failed: ${error.message}`);
+          await Promise.race([page.close().catch(() => {}), wait(2_000)]);
+          livePages.delete(operator.name);
+        }
+      }));
     } catch (error) {
       console.error(`live browser loop failed: ${error.message}`);
       if (liveBrowser) await liveBrowser.close().catch(() => {});
