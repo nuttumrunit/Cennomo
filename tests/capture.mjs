@@ -20,11 +20,11 @@ for (const route of ['live', 'operators', 'skills', 'territories', 'treasury', '
     await page.waitForFunction(previous => document.querySelector('.crawl-browser-frame')?.currentTime > previous + .5, { timeout: 8_000 }, firstTime);
   }
   if (route === 'operators' && !staticOnly) {
-    await page.waitForFunction(() => document.querySelectorAll('.operator-live-frame.connected').length === 12, { timeout: 60_000 });
+    await page.waitForFunction(() => document.querySelectorAll('.operator-live-frame.connected').length === 13, { timeout: 60_000 });
     const firstFrames = await page.$$eval('.operator-live-frame', images => images.map(image => image.dataset.framePath));
     await page.waitForFunction(previous => {
       const current = [...document.querySelectorAll('.operator-live-frame')].map(image => image.dataset.framePath);
-      return current.length === 12 && current.every((path, index) => path && path !== previous[index]);
+      return current.length === 13 && current.every((path, index) => path && path !== previous[index]);
     }, { timeout: 40_000 }, firstFrames);
     await page.click('.operator-monitor button');
     await page.waitForSelector('#liveRoom.open #roomLiveFrame.connected', { timeout: 30_000 });

@@ -18,12 +18,17 @@ check('worker heartbeat online', health.workers >= 1);
 check('credential vault configured', health.vaultConfigured === true);
 
 const snapshot = await request('/api/snapshot');
-check('12 official Tardigrade Agents', snapshot.metrics.officialOperators === 12);
+check('13 official Tardigrade Agents', snapshot.metrics.officialOperators === 13);
 check('7 credential-gated Tardigrade Agents remain learning', snapshot.operators.filter(operator => operator.state === 'learning' && operator.credential_required).length === 7);
 check('persistent worker metric', snapshot.metrics.onlineWorkers >= 1);
+if (snapshot.config.tokenMint) {
+  const token = await request('/api/token?refresh=1');
+  check('official token verified through Solana RPC', token.status === 'verified' && token.mint === snapshot.config.tokenMint);
+  check('official token authorities revoked', token.mintAuthority === null && token.freezeAuthority === null);
+}
 
 const catalog = await request('/api/v1/skills');
-check('12 unique Gateway tools', catalog.data.length === 12);
+check('13 unique Gateway tools', catalog.data.length === 13);
 const providers = await request('/api/v1/skills/quote.fetch/providers');
 check('provider router selected a Tardigrade Agent', providers.selected === 'jupiter-tardigrade-01' && providers.providers.length >= 1);
 
@@ -38,7 +43,7 @@ const mcp = await request('/mcp', {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} })
 });
-check('MCP catalog publishes 12 tools', mcp.result.tools.length === 12);
+check('MCP catalog publishes 13 tools', mcp.result.tools.length === 13);
 
 const approval = await request('/api/v1/approvals', {
   method: 'POST', headers: { 'Content-Type': 'application/json' },

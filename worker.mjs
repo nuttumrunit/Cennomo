@@ -726,7 +726,7 @@ async function cycle() {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ workerId, startedAt: workerStartedAt, capabilities: ['browser.capture','http.probe','skill.verify'] })
   });
-  for (let handled = 0; handled < 12; handled += 1) {
+  for (let handled = 0; handled < manifests.length; handled += 1) {
     const leased = await json(`${apiBase}/api/worker/jobs/lease`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workerId, startedAt: workerStartedAt, capabilities: ['browser.capture','http.probe','skill.verify'] })

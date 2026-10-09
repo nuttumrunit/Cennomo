@@ -79,5 +79,12 @@
     "capabilities":["chains.read","market.discover","position.inspect","health-factor.monitor","transaction.prepare"],
     "probe":{"name":"chains.read","url":"https://api.v3.aave.com/graphql","method":"POST","body":{"query":"query Chains { chains { name chainId } }"},"requiredKeys":["data"]},
     "official":true,"cohort":"genesis"
+  },
+  {
+    "name":"huggingface-tardigrade-13","territory":"huggingface","targetUrl":"https://huggingface.co/docs/hub/api",
+    "mission":"Model, dataset and Space discovery with reproducible Hub repository inspection.",
+    "capabilities":["model.catalog.read","dataset.inspect","space.inspect","repository.sync"],
+    "probe":{"name":"model.catalog.read","url":"https://huggingface.co/api/models?limit=1&sort=downloads&direction=-1"},
+    "official":true,"cohort":"official-expansion"
   }
 ]

@@ -52,6 +52,69 @@ const config = {
   workerIntervalMs: Math.max(15_000, Number(process.env.CENNOMO_WORKER_INTERVAL_MS || 60_000))
 };
 
+let tokenChainState = {
+  status: config.tokenMint ? 'checking' : 'not_configured',
+  mint: config.tokenMint || null,
+  checkedAt: null,
+  verifiedAt: null,
+  error: null
+};
+let tokenRefreshPromise = null;
+
+async function refreshTokenChainState(force = false) {
+  if (!config.tokenMint) return tokenChainState;
+  const lastCheck = tokenChainState.checkedAt ? new Date(tokenChainState.checkedAt).getTime() : 0;
+  if (!force && Date.now() - lastCheck < 45_000) return tokenChainState;
+  if (tokenRefreshPromise) return tokenRefreshPromise;
+  tokenRefreshPromise = (async () => {
+    const connection = new Connection(config.rpcUrl, 'confirmed');
+    const mint = new PublicKey(config.tokenMint);
+    const [account, supply, slot] = await Promise.all([
+      connection.getParsedAccountInfo(mint, 'confirmed'),
+      connection.getTokenSupply(mint, 'confirmed'),
+      connection.getSlot('confirmed')
+    ]);
+    if (!account.value) throw new Error('token mint was not found on Solana');
+    const parsed = account.value.data?.parsed?.info || {};
+    const metadata = (parsed.extensions || []).find(item => item.extension === 'tokenMetadata')?.state || {};
+    const programId = account.value.owner.toBase58();
+    const program = programId === TOKEN_2022_PROGRAM_ID.toBase58() ? 'Token-2022' : programId === TOKEN_PROGRAM_ID.toBase58() ? 'SPL Token' : 'Unknown';
+    tokenChainState = {
+      status: 'verified',
+      rpcStatus: 'healthy',
+      mint: mint.toBase58(),
+      name: metadata.name || 'TARDUMO AGENT',
+      symbol: metadata.symbol || 'TARDUMO',
+      metadataUri: metadata.uri || null,
+      program,
+      programId,
+      decimals: supply.value.decimals,
+      supply: supply.value.uiAmountString,
+      rawSupply: supply.value.amount,
+      mintAuthority: parsed.mintAuthority || null,
+      freezeAuthority: parsed.freezeAuthority || null,
+      authoritiesRevoked: !parsed.mintAuthority && !parsed.freezeAuthority,
+      slot,
+      checkedAt: now(),
+      verifiedAt: now(),
+      explorerUrl: `https://solscan.io/token/${mint.toBase58()}`,
+      pumpfunUrl: config.pumpfunUrl,
+      error: null
+    };
+    return tokenChainState;
+  })().catch(error => {
+    tokenChainState = {
+      ...tokenChainState,
+      status: tokenChainState.verifiedAt ? 'verified' : 'degraded',
+      rpcStatus: 'degraded',
+      checkedAt: now(),
+      error: error.message
+    };
+    return tokenChainState;
+  }).finally(() => { tokenRefreshPromise = null; });
+  return tokenRefreshPromise;
+}
+
 const db = new DatabaseSync(resolve(dataDir, 'cennomo.sqlite'));
 db.exec(`
   PRAGMA journal_mode = WAL;
@@ -423,6 +486,7 @@ function snapshot() {
       address: config.treasuryAddress || null,
       source: config.tokenMint ? 'Pump.fun creator rewards' : null
     },
+    token: tokenChainState,
     readiness: {
       database: true,
       workerNetwork: Number(workers.count) > 0,
@@ -872,6 +936,10 @@ async function api(request, response, url) {
   }
   if (request.method === 'GET' && url.pathname === '/api/readiness') return sendJson(response, 200, snapshot().readiness);
   if (request.method === 'GET' && url.pathname === '/api/snapshot') return sendJson(response, 200, snapshot());
+  if (request.method === 'GET' && url.pathname === '/api/token') {
+    const force = url.searchParams.get('refresh') === '1';
+    return sendJson(response, 200, await refreshTokenChainState(force));
+  }
   const videoMatch = url.pathname.match(/^\/api\/operators\/([^/]+)\/video\.webm$/);
   if (request.method === 'GET' && videoMatch) {
     const name = decodeURIComponent(videoMatch[1]);
@@ -1232,6 +1300,8 @@ const heartbeat = setInterval(() => {
   for (const response of clients) response.write(`: keepalive ${Date.now()}\n\n`);
 }, 20_000);
 scheduleMissingJobs();
+void refreshTokenChainState(true);
+const tokenMonitor = setInterval(() => { void refreshTokenChainState(true); }, 60_000);
 const scheduler = setInterval(() => {
   scheduleMissingJobs();
   db.prepare("UPDATE worker_nodes SET status='offline' WHERE last_seen < ?").run(new Date(Date.now() - 120_000).toISOString());
@@ -1246,6 +1316,7 @@ server.listen(config.port, config.host, () => {
 function shutdown() {
   clearInterval(heartbeat);
   clearInterval(scheduler);
+  clearInterval(tokenMonitor);
   for (const response of clients) response.end();
   server.close(() => { db.close(); process.exit(0); });
 }

@@ -29,7 +29,7 @@ for (const route of ['operators', 'skills', 'gateway', 'territories', 'treasury'
 }
 
 await page.click('[data-route="operators"]');
-await check('Tardigrade Agent cards rendered', () => page.$$eval('#monitorGrid .operator-monitor', nodes => nodes.length === 12));
+await check('Tardigrade Agent cards rendered', () => page.$$eval('#monitorGrid .operator-monitor', nodes => nodes.length === 13));
 await check('Official crypto tardigrades lead first row', () => page.$$eval('#monitorGrid .operator-monitor header span', nodes => nodes.slice(0, 3).map(node => node.textContent).every((value, index) => value.includes(['jupiter-tardigrade-01','wormhole-tardigrade-02','aave-tardigrade-03'][index]))));
 await page.waitForFunction(() => [...document.querySelectorAll('#monitorGrid .operator-live-frame')].slice(0, 3).every(image => image.naturalWidth > 0));
 await check('First-row live frames render', () => page.$$eval('#monitorGrid .operator-live-frame', nodes => nodes.slice(0, 3).every(image => image.naturalWidth > 0)));
@@ -48,9 +48,9 @@ await page.type('#skillSearch', 'no-such-real-skill');
 await check('Skill search has empty state', () => page.$eval('#skillRows', node => node.textContent.includes('No callable routes match')));
 
 await page.click('[data-route="gateway"]');
-await check('Gateway publishes 12 tools', () => page.$$eval('#gatewayRows .gateway-tool', nodes => nodes.length === 12));
-await check('Gateway REST catalog works', () => page.evaluate(() => fetch('/api/v1/skills').then(r => r.json()).then(body => body.data.length === 12)));
-await check('Gateway MCP catalog works', () => page.evaluate(() => fetch('/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }) }).then(r => r.json()).then(body => body.result.tools.length === 12)));
+await check('Gateway publishes 13 tools', () => page.$$eval('#gatewayRows .gateway-tool', nodes => nodes.length === 13));
+await check('Gateway REST catalog works', () => page.evaluate(() => fetch('/api/v1/skills').then(r => r.json()).then(body => body.data.length === 13)));
+await check('Gateway MCP catalog works', () => page.evaluate(() => fetch('/mcp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }) }).then(r => r.json()).then(body => body.result.tools.length === 13)));
 
 await page.click('[data-route="territories"]');
 await check('Territory list rendered', () => page.$$eval('#territoryList .territory-item', nodes => nodes.length > 0));
@@ -61,9 +61,17 @@ await check('Treasury value rendered', () => page.$eval('.treasury-total strong'
 await check('Treasury events rendered', () => page.$eval('#treasuryEvents', node => node.children.length > 0));
 await check('Treasury wallet links to Solscan', () => page.$eval('#treasuryExplorer', node => !node.hidden && node.href.startsWith('https://solscan.io/account/')));
 await check('Treasury reports real settlement counters', () => page.$eval('#treasurySettlements', node => /^\d+$/.test(node.textContent.trim())));
-await check('Treasury reports token live', () => page.$eval('#treasuryPhase', node => node.textContent === 'TOKEN LIVE'));
+await check('Treasury reports token verified', () => page.$eval('#treasuryPhase', node => node.textContent === 'TOKEN VERIFIED'));
 await check('Treasury publishes official CA', () => page.$eval('#treasuryMint', node => node.textContent === 'Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
 await check('Treasury links official Pump.fun coin', () => page.$eval('#treasuryPumpfun', node => node.href === 'https://pump.fun/coin/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
+await check('Treasury links token explorer', () => page.$eval('#tokenExplorer', node => node.href === 'https://solscan.io/token/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
+await check('Token profile is RPC verified', () => page.$eval('#tokenChainStatus', node => node.textContent.startsWith('VERIFIED')));
+await check('Token profile reports Token-2022', () => page.$eval('#tokenProgram', node => node.textContent === 'Token-2022'));
+await check('Token profile reports live supply', () => page.$eval('#tokenSupply', node => /^\d[\d,.]* TARDUMO$/.test(node.textContent)));
+await check('Token authorities are revoked', () => page.$$eval('#tokenMintAuthority,#tokenFreezeAuthority', nodes => nodes.every(node => node.textContent === 'REVOKED')));
+await page.click('#tokenRefresh');
+await page.waitForFunction(() => document.querySelector('#tokenRefresh')?.textContent === 'refresh chain');
+await check('Manual token refresh works', () => page.$eval('#tokenSlot', node => /^\d[\d,]+$/.test(node.textContent)));
 await check('Treasury publishes launch tax address', () => page.$eval('#treasuryWallet', node => node.textContent === 'AoFRLLN3GjGcz5BxNuRTqLNDYSgrbhmYggUNotbDAHNF'));
 await check('Treasury heading is neutral', () => page.$eval('#route-treasury .section-head b', node => node.textContent === 'NETWORK TREASURY'));
 
@@ -96,7 +104,7 @@ await page.goto(`${base}#live`, { waitUntil: 'networkidle2', timeout: 30_000 });
 await page.waitForFunction(() => document.documentElement.dataset.api === 'online', { timeout: 15_000 });
 await check('Mobile page has no body overflow', () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
 await page.click('[data-route="operators"]');
-await check('Mobile Tardigrades renders', () => page.$$eval('#monitorGrid .operator-monitor', nodes => nodes.length === 12));
+await check('Mobile Tardigrades renders', () => page.$$eval('#monitorGrid .operator-monitor', nodes => nodes.length === 13));
 await page.click('[data-route="deploy"]');
 await check('Mobile Deploy renders', () => page.$eval('#spawnButton', node => getComputedStyle(node).display !== 'none'));
 await page.click('[data-route="manual"]');
