@@ -224,6 +224,7 @@ let liveBrowser = null;
 let liveBrowserLaunch = null;
 let liveSequence = 0;
 const livePages = new Map();
+const liveFailures = new Map();
 const wait = ms => new Promise(resolveWait => setTimeout(resolveWait, ms));
 
 async function ensureLiveBrowser() {
@@ -257,7 +258,7 @@ async function createLivePage(operator) {
     await page.setViewport({ width: 1120, height: 630, deviceScaleFactor: 1 });
     page.setDefaultNavigationTimeout(30_000);
     page.on('dialog', dialog => dialog.dismiss().catch(() => {}));
-    try { await page.goto(operator.target_url, { waitUntil: 'domcontentloaded', timeout: 30_000 }); }
+    try { await page.goto(operator.target_url, { waitUntil: 'domcontentloaded', timeout: 15_000 }); }
     catch (error) {
       if (page.url() === 'about:blank') throw error;
       console.warn(`${operator.name}: navigation settled partially: ${error.message}`);
@@ -290,7 +291,7 @@ async function captureLiveFrame(operator, page) {
   try {
     const shot = await Promise.race([
       session.send('Page.captureScreenshot', { format: 'jpeg', quality: 64, fromSurface: true, captureBeyondViewport: false }),
-      wait(12_000).then(() => { throw new Error('live frame timed out'); })
+      wait(6_000).then(() => { throw new Error('live frame timed out'); })
     ]);
     captured = true;
     bytes = Buffer.from(shot.data, 'base64');
@@ -319,22 +320,29 @@ async function liveLoop() {
         if (!activeNames.has(name)) { await page.close().catch(() => {}); livePages.delete(name); }
       }
       const missing = operators.filter(operator => !livePages.has(operator.name));
-      for (let index = 0; index < missing.length; index += 3) {
-        await Promise.allSettled(missing.slice(index, index + 3).map(async operator => {
-          try { await createLivePage(operator); }
-          catch (error) { console.warn(`${operator.name}: live page unavailable: ${error.message}`); }
-        }));
-      }
-      await Promise.allSettled(operators.map(async operator => {
+      await Promise.allSettled(missing.map(async operator => {
+        try { await createLivePage(operator); liveFailures.set(operator.name, 0); }
+        catch (error) { console.warn(`${operator.name}: live page unavailable: ${error.message}`); }
+      }));
+      for (const operator of operators) {
         const page = livePages.get(operator.name);
-        if (!page || page.isClosed()) return;
-        try { await captureLiveFrame(operator, page); }
+        if (!page || page.isClosed()) continue;
+        try {
+          await captureLiveFrame(operator, page);
+          liveFailures.set(operator.name, 0);
+        }
         catch (error) {
           console.warn(`${operator.name}: live frame failed: ${error.message}`);
-          await Promise.race([page.close().catch(() => {}), wait(2_000)]);
-          livePages.delete(operator.name);
+          const failures = (liveFailures.get(operator.name) || 0) + 1;
+          liveFailures.set(operator.name, failures);
+          if (failures >= 3) {
+            await Promise.race([page.close().catch(() => {}), wait(2_000)]);
+            livePages.delete(operator.name);
+            liveFailures.delete(operator.name);
+          }
         }
-      }));
+        await wait(50);
+      }
     } catch (error) {
       console.error(`live browser loop failed: ${error.message}`);
       if (liveBrowser) await liveBrowser.close().catch(() => {});
