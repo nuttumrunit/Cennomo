@@ -349,29 +349,34 @@ async function liveLoop() {
                 }
                 if (state.direction > 0 && current >= limit - 12) {
                   state.direction = -1;
-                  state.dwell = 1;
+                  state.dwell = 2;
                   state.turns += 1;
                   return;
                 }
                 if (state.direction < 0 && current <= 12) {
                   state.direction = 1;
-                  state.dwell = 1;
+                  state.dwell = 2;
                   state.turns += 1;
                   return;
                 }
-                const ratio = [0.2, 0.27, 0.34][state.turns % 3];
-                const step = Math.max(120, Math.round(innerHeight * ratio)) * state.direction;
+                const ratio = [0.08, 0.11, 0.14][state.turns % 3];
+                const step = Math.max(70, Math.round(innerHeight * ratio)) * state.direction;
                 scrollBy({ top: step, behavior: 'smooth' });
               });
               await wait(240);
               const telemetry = await page.evaluate(() => {
                 document.getElementById('__cennomo_operator_vision__')?.remove();
                 const selectors = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"]';
+                const labelFor = node => (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('placeholder') || node.textContent || '').replace(/\s+/g, ' ').trim();
                 const nodes = [...document.querySelectorAll(selectors)].filter(node => {
                   if (node.closest('#__cennomo_operator_vision__')) return false;
                   const rect = node.getBoundingClientRect();
                   const style = getComputedStyle(node);
-                  return rect.width > 18 && rect.height > 12 && rect.bottom > 8 && rect.top < innerHeight - 8 && rect.right > 8 && rect.left < innerWidth - 8 && style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity || 1) > 0;
+                  if (labelFor(node).length < 2 || rect.width < 18 || rect.height < 12 || rect.width > innerWidth * .58 || rect.height > innerHeight * .36 || rect.bottom <= 8 || rect.top >= innerHeight - 8 || rect.right <= 8 || rect.left >= innerWidth - 8 || style.visibility === 'hidden' || style.display === 'none' || Number(style.opacity || 1) <= 0) return false;
+                  const x = Math.max(1, Math.min(innerWidth - 2, rect.left + rect.width / 2));
+                  const y = Math.max(1, Math.min(innerHeight - 2, rect.top + rect.height / 2));
+                  const hit = document.elementFromPoint(x, y);
+                  return Boolean(hit && (node === hit || node.contains(hit) || hit.contains(node)));
                 });
                 const scrollRoot = document.scrollingElement || document.documentElement;
                 if (!nodes.length) return { actionableCount: 0, direction: window.__cennomoBrowseState?.direction || 1, progress: scrollRoot.scrollHeight > innerHeight ? scrollRoot.scrollTop / (scrollRoot.scrollHeight - innerHeight) : 0, targets: [] };
@@ -381,8 +386,8 @@ async function liveLoop() {
                 state.target = (state.target + Math.max(1, Math.floor(nodes.length / 5))) % nodes.length;
                 const targets = ordered.slice(0, 6).map(target => {
                   const rect = target.getBoundingClientRect();
-                  const label = (target.getAttribute('aria-label') || target.getAttribute('title') || target.textContent || target.getAttribute('placeholder') || target.tagName).replace(/\s+/g, ' ').trim().slice(0, 34);
-                  return { tag: target.tagName.toLowerCase(), label: label || 'interactive element', x: Math.max(0, rect.left) / innerWidth, y: Math.max(0, rect.top) / innerHeight, width: Math.min(innerWidth - Math.max(0, rect.left), rect.width) / innerWidth, height: Math.min(innerHeight - Math.max(0, rect.top), rect.height) / innerHeight };
+                  const label = labelFor(target).slice(0, 34);
+                  return { tag: target.tagName.toLowerCase(), label, x: Math.max(0, rect.left) / innerWidth, y: Math.max(0, rect.top) / innerHeight, width: Math.min(innerWidth - Math.max(0, rect.left), rect.width) / innerWidth, height: Math.min(innerHeight - Math.max(0, rect.top), rect.height) / innerHeight };
                 });
                 return { actionableCount: nodes.length, direction: state.direction, progress: scrollRoot.scrollHeight > innerHeight ? scrollRoot.scrollTop / (scrollRoot.scrollHeight - innerHeight) : 0, targets };
               });
