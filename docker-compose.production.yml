@@ -7,7 +7,7 @@ services:
     env_file:
       - .env.production
     environment:
-      CENNOMO_LIVE_FRAME_INTERVAL_MS: 4000
+      CENNOMO_LIVE_FRAME_INTERVAL_MS: 850
     volumes:
       - ./data:/app/data
       - ./streams:/app/streams
