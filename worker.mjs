@@ -226,6 +226,7 @@ let liveScrollPump = null;
 let liveScrollPumping = false;
 let liveCaptureCursor = 0;
 let liveSequence = 0;
+let liveScrollTick = 0;
 const livePages = new Map();
 const liveSessions = new Map();
 const liveFrameState = new Map();
@@ -239,10 +240,15 @@ async function stopDemandVideo(name) {
   const active = liveVideoRecorders.get(name);
   if (!active) return;
   liveVideoRecorders.delete(name);
-  await active.recorder.stop().catch(error => console.warn(`${name}: video recorder stop failed: ${error.message}`));
-  const state = liveFrameState.get(name), session = liveSessions.get(name);
+  clearInterval(active.feeder);
+  active.stopping = true;
+  active.process.stdin.end();
+  const killTimer = setTimeout(() => active.process.kill('SIGKILL'), 2_000);
+  killTimer.unref?.();
+  await new Promise(resolveStop => active.process.once('close', resolveStop));
+  clearTimeout(killTimer);
+  const state = liveFrameState.get(name);
   if (state) { state.video = false; state.suspended = false; }
-  if (session) await session.send('Page.startScreencast', screencastOptions).catch(() => {});
   setTimeout(() => { try { unlinkSync(active.file); } catch {} }, 5_000).unref?.();
 }
 
@@ -250,22 +256,44 @@ async function startDemandVideo(name, page, demand) {
   const current = liveVideoRecorders.get(name);
   if (current?.session === demand.session) return;
   if (current) await stopDemandVideo(name);
-  const state = liveFrameState.get(name), session = liveSessions.get(name);
-  if (!state || !session || page.isClosed()) return;
+  const state = liveFrameState.get(name);
+  if (!state || page.isClosed()) return;
   state.video = true;
-  state.suspended = true;
-  await session.send('Page.stopScreencast').catch(() => {});
+  state.suspended = false;
   const folder = resolve(streamRoot, name), file = resolve(folder, `video-${demand.session}.webm`);
   mkdirSync(folder, { recursive: true });
   try { unlinkSync(file); } catch {}
   try {
-    const recorder = await page.screencast({ path: file, fps: Math.max(12, Math.min(24, Number(demand.fps || 20))), format: 'webm', quality: 36, overwrite: true });
-    liveVideoRecorders.set(name, { session: demand.session, recorder, file });
+    const fps = Math.max(12, Math.min(24, Number(demand.fps || 20)));
+    const encoder = spawn('ffmpeg', [
+      '-y', '-loglevel', 'error', '-fflags', 'nobuffer',
+      '-f', 'image2pipe', '-framerate', String(fps), '-vcodec', 'mjpeg', '-i', 'pipe:0',
+      '-an', '-c:v', 'libvpx-vp9', '-deadline', 'realtime', '-cpu-used', '8', '-threads', '2',
+      '-b:v', '0', '-crf', '38', '-g', String(fps), '-lag-in-frames', '0', '-row-mt', '1',
+      '-f', 'webm', '-cluster_time_limit', '500', '-cluster_size_limit', '0', '-live', '1',
+      '-flush_packets', '1', file
+    ], { stdio: ['pipe', 'ignore', 'pipe'] });
+    const active = { session: demand.session, process: encoder, file, feeder: null, backpressured: false, stopping: false, stderr: '' };
+    encoder.stderr.on('data', chunk => { active.stderr = (active.stderr + chunk.toString()).slice(-2_000); });
+    encoder.stdin.on('drain', () => { active.backpressured = false; });
+    encoder.on('error', error => console.warn(`${name}: live WebM encoder failed: ${error.message}`));
+    encoder.on('close', code => {
+      if (!active.stopping && liveVideoRecorders.get(name) === active) {
+        liveVideoRecorders.delete(name);
+        state.video = false;
+        console.warn(`${name}: live WebM encoder exited ${code}: ${active.stderr.trim() || 'no encoder output'}`);
+      }
+    });
+    active.feeder = setInterval(() => {
+      if (active.backpressured || active.stopping || encoder.stdin.destroyed || !state.latestFrame) return;
+      active.backpressured = !encoder.stdin.write(state.latestFrame);
+    }, Math.round(1_000 / fps));
+    active.feeder.unref?.();
+    liveVideoRecorders.set(name, active);
     console.log(`${name}: live WebM video started`);
   } catch (error) {
     state.video = false;
     state.suspended = false;
-    await session.send('Page.startScreencast', screencastOptions).catch(() => {});
     console.warn(`${name}: live WebM unavailable: ${error.message}`);
   }
 }
@@ -382,7 +410,8 @@ function startLiveScrollPump() {
   liveScrollPump = setInterval(() => {
     if (liveScrollPumping) return;
     liveScrollPumping = true;
-    const entries = [...livePages.entries()];
+    liveScrollTick += 1;
+    const entries = [...livePages.entries()].filter(([name]) => liveVideoRecorders.has(name) || liveScrollTick % 5 === 0);
     (async () => {
       const scrollResults = await Promise.allSettled(entries.map(([, page]) => page.evaluate(() => {
         const state = window.__cennomoNaturalReader;
@@ -391,7 +420,7 @@ function startLiveScrollPump() {
         const limit = Math.max(0, root.scrollHeight - innerHeight);
         const now = Date.now(), elapsed = Math.min(600, Math.max(0, now - (state.lastPump || now - 250)));
         state.lastPump = now;
-        if (root.scrollTop < limit - 3) root.scrollTop = Math.min(limit, root.scrollTop + elapsed * .058);
+        if (root.scrollTop < limit - 3) root.scrollTop = Math.min(limit, root.scrollTop + elapsed * .062);
         window.__cennomoVisionUpdate?.();
         if (root.scrollTop < limit - 3) return null;
         const links = [...document.querySelectorAll('a[href]')].map(link => {
@@ -422,7 +451,7 @@ function startLiveScrollPump() {
         } finally { state.busy = false; }
       }));
     })().finally(() => { liveScrollPumping = false; });
-  }, 250);
+  }, 50);
   liveScrollPump.unref?.();
 }
 
@@ -472,7 +501,9 @@ async function createLivePage(operator) {
     session.on('Page.screencastFrame', payload => {
       void session.send('Page.screencastFrameAck', { sessionId: payload.sessionId }).catch(() => {});
       const state = liveFrameState.get(operator.name);
-      if (!state || state.busy || state.suspended || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
+      if (!state) return;
+      state.latestFrame = Buffer.from(payload.data, 'base64');
+      if (state.video || state.busy || state.suspended || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
       state.busy = true;
       state.lastPublished = Date.now();
       void publishLiveFrame(operator, payload.data, state.telemetry || null)
