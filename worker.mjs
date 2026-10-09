@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = resolve('.');
@@ -186,19 +186,23 @@ function screenshot(name, targetUrl) {
   return new Promise((resolveCapture, rejectCapture) => {
     const folder = resolve(streamRoot, name);
     mkdirSync(folder, { recursive: true });
-    const filename = `frame-${Date.now()}-${process.pid}.png`;
+    const stamp = Date.now();
+    const filename = `frame-${stamp}-${process.pid}.png`;
     const target = resolve(folder, filename);
+    const profile = resolve(folder, `profile-${stamp}-${process.pid}`);
+    mkdirSync(profile, { recursive: true });
     const args = [
       '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run',
       '--no-default-browser-check', '--disable-background-networking', '--disable-extensions',
       '--disable-application-cache', '--disk-cache-size=1', '--media-cache-size=1',
-      '--window-size=1280,720', '--virtual-time-budget=5000', `--screenshot=${target}`, targetUrl
+      `--user-data-dir=${profile}`, '--window-size=1280,720', '--virtual-time-budget=5000', `--screenshot=${target}`, targetUrl
     ];
     const child = spawn(chrome, args, { stdio: 'ignore', windowsHide: true });
     const timer = setTimeout(() => child.kill(), 25_000);
-    child.once('error', error => { clearTimeout(timer); rejectCapture(error); });
+    child.once('error', error => { clearTimeout(timer); try { rmSync(profile, { recursive: true, force: true }); } catch {} rejectCapture(error); });
     child.once('close', code => {
       clearTimeout(timer);
+      try { rmSync(profile, { recursive: true, force: true }); } catch {}
       if (!existsSync(target)) return rejectCapture(new Error(`Chrome exited ${code} without a frame`));
       const bytes = readFileSync(target);
       const oldFrames = readdirSync(folder).filter(file => /^frame-\d+-\d+\.png$/.test(file)).sort().slice(0, -3);
@@ -267,7 +271,7 @@ async function cycle() {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ workerId, startedAt: workerStartedAt, capabilities: ['browser.capture','http.probe','skill.verify'] })
   });
-  for (let handled = 0; handled < 100; handled += 1) {
+  for (let handled = 0; handled < 12; handled += 1) {
     const leased = await json(`${apiBase}/api/worker/jobs/lease`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ workerId, startedAt: workerStartedAt, capabilities: ['browser.capture','http.probe','skill.verify'] })
