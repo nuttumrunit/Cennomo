@@ -71,6 +71,7 @@ db.exec(`
     last_seen TEXT,
     last_success TEXT,
     stream_path TEXT,
+    telemetry_json TEXT,
     created_tx TEXT UNIQUE,
     created_at TEXT NOT NULL
   );
@@ -196,6 +197,9 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_jobs_available ON jobs(state,not_before);
   CREATE INDEX IF NOT EXISTS idx_workers_seen ON worker_nodes(last_seen DESC);
 `);
+try { db.exec('ALTER TABLE operators ADD COLUMN telemetry_json TEXT'); } catch (error) {
+  if (!String(error.message).includes('duplicate column name')) throw error;
+}
 
 const now = () => new Date().toISOString();
 const vaultKey = config.encryptionKey ? createHash('sha256').update(config.encryptionKey).digest() : null;
@@ -277,8 +281,12 @@ function operatorRows() {
   return rows.map(operator => {
     const source = sourceFor(operator.name, operator.territory);
     const officialSource = sourceByName.get(operator.name);
+    let telemetry = null;
+    try { telemetry = operator.telemetry_json ? JSON.parse(operator.telemetry_json) : null; } catch {}
+    delete operator.telemetry_json;
     return {
       ...operator,
+      telemetry,
       mission: source?.mission || null,
       capabilities: source?.capabilities || [],
       official: Boolean(officialSource && officialSource.official !== false),
@@ -1034,7 +1042,7 @@ async function api(request, response, url) {
         x: number(target?.x), y: number(target?.y), width: number(target?.width), height: number(target?.height)
       }))
     } : null;
-    db.prepare('UPDATE operators SET stream_path=?,last_seen=?,last_success=? WHERE id=?').run(body.streamPath, observedAt, observedAt, operator.id);
+    db.prepare('UPDATE operators SET stream_path=?,telemetry_json=?,last_seen=?,last_success=? WHERE id=?').run(body.streamPath, telemetry ? JSON.stringify(telemetry) : null, observedAt, observedAt, operator.id);
     publish('frame', { operator: name, operatorId: operator.id, streamPath: body.streamPath, proof: body.proof, sequence, observedAt, telemetry });
     return sendJson(response, 200, { ok: true, sequence });
   }
