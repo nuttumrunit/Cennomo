@@ -533,11 +533,11 @@ function inputSchema(name) {
   return { type: 'object', additionalProperties: false, properties: {} };
 }
 
-function gatewaySkills() {
+function gatewaySkills({ callableOnly = false } = {}) {
   return db.prepare(`
     SELECT s.*, o.name AS operator_name, o.territory, o.state AS operator_state, o.latency_ms AS operator_latency_ms, o.owner AS operator_owner
     FROM skills s JOIN operators o ON o.id=s.operator_id
-    WHERE s.state='verified' AND o.state NOT IN ('offline','dead','degrading')
+    WHERE s.state='verified' AND o.state NOT IN ('offline','dead')
     ORDER BY o.id, s.name
   `).all().map(skill => {
     const source = sourceFor(skill.operator_name, skill.territory);
@@ -563,11 +563,11 @@ function gatewaySkills() {
         note: 'Required only for account-scoped or mutating capabilities.'
       } : null
     };
-  });
+  }).filter(skill => !callableOnly || !['degrading', 'repairing'].includes(skill.operatorState));
 }
 
 function selectGatewaySkill(name) {
-  const providers = gatewaySkills().filter(item => item.name === name);
+  const providers = gatewaySkills({ callableOnly: true }).filter(item => item.name === name);
   providers.sort((a, b) => {
     const stateScore = value => value.operatorState === 'verified' ? 3 : value.operatorState === 'learning' ? 2 : 1;
     return stateScore(b) - stateScore(a)
@@ -579,8 +579,10 @@ function selectGatewaySkill(name) {
 
 function gatewayCatalog() {
   return [...new Set(gatewaySkills().map(item => item.name))].map(name => {
+    const providers = gatewaySkills().filter(item => item.name === name);
     const selected = selectGatewaySkill(name);
-    return { ...selected, providerCount: gatewaySkills().filter(item => item.name === name).length };
+    const published = selected || providers[0];
+    return { ...published, providerCount: providers.length, callable: Boolean(selected) };
   });
 }
 
