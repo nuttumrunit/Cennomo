@@ -31,6 +31,14 @@ if [[ ! -f .env.production ]]; then
     'CENNOMO_DEFAULT_CALL_FEE_LAMPORTS=0' > .env.production
 fi
 
+# Keep the public browser allowlist current on every deployment. Secrets and
+# other production values remain untouched when the environment already exists.
+if grep -q '^CENNOMO_WEB_ORIGINS=' .env.production; then
+  sed -i "s|^CENNOMO_WEB_ORIGINS=.*$|CENNOMO_WEB_ORIGINS=${CENNOMO_WEB_ORIGIN}|" .env.production
+else
+  printf '%s\n' "CENNOMO_WEB_ORIGINS=${CENNOMO_WEB_ORIGIN}" >> .env.production
+fi
+
 export CENNOMO_HOST
 docker compose -f docker-compose.production.yml up -d --build --remove-orphans
 docker image prune -f
