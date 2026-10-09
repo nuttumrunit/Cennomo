@@ -969,8 +969,19 @@ async function api(request, response, url) {
     if (!/^[a-f0-9]{64}$/i.test(String(body.proof || ''))) throw Object.assign(new Error('invalid frame proof'), { status: 400 });
     const observedAt = body.observedAt || now();
     const sequence = Math.max(1, Number(body.sequence || 1));
+    const number = value => Number.isFinite(Number(value)) ? Math.max(0, Math.min(1, Number(value))) : 0;
+    const telemetry = body.telemetry && typeof body.telemetry === 'object' ? {
+      actionableCount: Math.max(0, Math.min(999, Number(body.telemetry.actionableCount || 0))),
+      direction: Number(body.telemetry.direction) < 0 ? -1 : 1,
+      progress: number(body.telemetry.progress),
+      targets: (Array.isArray(body.telemetry.targets) ? body.telemetry.targets : []).slice(0, 6).map(target => ({
+        tag: String(target?.tag || 'element').replace(/[^a-z0-9-]/gi, '').slice(0, 18),
+        label: String(target?.label || 'interactive element').replace(/[\r\n\t]+/g, ' ').slice(0, 48),
+        x: number(target?.x), y: number(target?.y), width: number(target?.width), height: number(target?.height)
+      }))
+    } : null;
     db.prepare('UPDATE operators SET stream_path=?,last_seen=?,last_success=? WHERE id=?').run(body.streamPath, observedAt, observedAt, operator.id);
-    publish('frame', { operator: name, operatorId: operator.id, streamPath: body.streamPath, proof: body.proof, sequence, observedAt });
+    publish('frame', { operator: name, operatorId: operator.id, streamPath: body.streamPath, proof: body.proof, sequence, observedAt, telemetry });
     return sendJson(response, 200, { ok: true, sequence });
   }
 

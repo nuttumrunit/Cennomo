@@ -291,7 +291,7 @@ async function createLivePage(operator) {
   }
 }
 
-async function publishLiveFrame(operator, encodedFrame) {
+async function publishLiveFrame(operator, encodedFrame, telemetry = null) {
   const folder = resolve(streamRoot, operator.name);
   mkdirSync(folder, { recursive: true });
   const sequence = ++liveSequence;
@@ -306,7 +306,7 @@ async function publishLiveFrame(operator, encodedFrame) {
   }
   await json(`${apiBase}/api/worker/operators/${encodeURIComponent(operator.name)}/frame`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ streamPath: `/streams/${encodeURIComponent(operator.name)}/${filename}`, proof, sequence, observedAt: new Date().toISOString() })
+    body: JSON.stringify({ streamPath: `/streams/${encodeURIComponent(operator.name)}/${filename}`, proof, sequence, observedAt: new Date().toISOString(), telemetry })
   });
 }
 
@@ -364,7 +364,7 @@ async function liveLoop() {
                 scrollBy({ top: step, behavior: 'smooth' });
               });
               await wait(240);
-              await page.evaluate(() => {
+              const telemetry = await page.evaluate(() => {
                 document.getElementById('__cennomo_operator_vision__')?.remove();
                 const selectors = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"]';
                 const nodes = [...document.querySelectorAll(selectors)].filter(node => {
@@ -373,29 +373,18 @@ async function liveLoop() {
                   const style = getComputedStyle(node);
                   return rect.width > 18 && rect.height > 12 && rect.bottom > 8 && rect.top < innerHeight - 8 && rect.right > 8 && rect.left < innerWidth - 8 && style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity || 1) > 0;
                 });
-                if (!nodes.length) return;
+                const scrollRoot = document.scrollingElement || document.documentElement;
+                if (!nodes.length) return { actionableCount: 0, direction: window.__cennomoBrowseState?.direction || 1, progress: scrollRoot.scrollHeight > innerHeight ? scrollRoot.scrollTop / (scrollRoot.scrollHeight - innerHeight) : 0, targets: [] };
                 const state = window.__cennomoBrowseState ||= { direction: 1, dwell: 0, turns: 0 };
                 state.target = (state.target || 0) % nodes.length;
-                const target = nodes[state.target];
-                state.target = (state.target + 1) % nodes.length;
-                const rect = target.getBoundingClientRect();
-                const labelText = (target.getAttribute('aria-label') || target.getAttribute('title') || target.textContent || target.getAttribute('placeholder') || target.tagName).replace(/\s+/g, ' ').trim().slice(0, 34);
-                const root = document.createElement('div');
-                root.id = '__cennomo_operator_vision__';
-                Object.assign(root.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '2147483647', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' });
-                const box = document.createElement('div');
-                Object.assign(box.style, { position: 'fixed', left: `${Math.max(2, rect.left - 3)}px`, top: `${Math.max(2, rect.top - 3)}px`, width: `${Math.min(innerWidth - Math.max(2, rect.left - 3) - 2, rect.width + 6)}px`, height: `${Math.min(innerHeight - Math.max(2, rect.top - 3) - 2, rect.height + 6)}px`, border: '1px solid #00ff47', boxShadow: '0 0 0 1px rgba(0,0,0,.7),0 0 14px rgba(0,255,71,.2)' });
-                const label = document.createElement('div');
-                label.textContent = `OBSERVE · ${target.tagName.toLowerCase()} · ${labelText || 'interactive element'}`;
-                Object.assign(label.style, { position: 'absolute', left: '-1px', bottom: '100%', maxWidth: '300px', padding: '3px 5px', color: '#001407', background: '#00ff47', fontSize: '8px', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
-                box.append(label);
-                const cursor = document.createElement('div');
-                Object.assign(cursor.style, { position: 'fixed', left: `${Math.min(innerWidth - 14, Math.max(4, rect.left + Math.min(rect.width * .62, rect.width - 4)))}px`, top: `${Math.min(innerHeight - 14, Math.max(4, rect.top + Math.min(rect.height * .56, rect.height - 4)))}px`, width: '11px', height: '11px', border: '1px solid #00ff47', borderRadius: '50%', boxShadow: '0 0 10px #00ff47', background: 'rgba(0,255,71,.12)' });
-                const scan = document.createElement('div');
-                Object.assign(scan.style, { position: 'fixed', left: '0', right: '0', top: '0', height: '1px', background: 'linear-gradient(90deg,transparent,#00ff47 35%,#00ff47 65%,transparent)', boxShadow: '0 0 12px rgba(0,255,71,.55)', opacity: '.65' });
-                root.append(box, cursor, scan);
-                document.documentElement.append(root);
-                scan.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${innerHeight}px)` }], { duration: 1100, easing: 'linear', fill: 'forwards' });
+                const ordered = [...nodes.slice(state.target), ...nodes.slice(0, state.target)];
+                state.target = (state.target + Math.max(1, Math.floor(nodes.length / 5))) % nodes.length;
+                const targets = ordered.slice(0, 6).map(target => {
+                  const rect = target.getBoundingClientRect();
+                  const label = (target.getAttribute('aria-label') || target.getAttribute('title') || target.textContent || target.getAttribute('placeholder') || target.tagName).replace(/\s+/g, ' ').trim().slice(0, 34);
+                  return { tag: target.tagName.toLowerCase(), label: label || 'interactive element', x: Math.max(0, rect.left) / innerWidth, y: Math.max(0, rect.top) / innerHeight, width: Math.min(innerWidth - Math.max(0, rect.left), rect.width) / innerWidth, height: Math.min(innerHeight - Math.max(0, rect.top), rect.height) / innerHeight };
+                });
+                return { actionableCount: nodes.length, direction: state.direction, progress: scrollRoot.scrollHeight > innerHeight ? scrollRoot.scrollTop / (scrollRoot.scrollHeight - innerHeight) : 0, targets };
               });
               await wait(250);
               if (session && frameState) {
@@ -406,7 +395,7 @@ async function liveLoop() {
                 if (fallback?.data) {
                   frameState.busy = true;
                   frameState.lastPublished = Date.now();
-                  try { await publishLiveFrame(operator, fallback.data); }
+                  try { await publishLiveFrame(operator, fallback.data, telemetry); }
                   finally { frameState.busy = false; }
                 }
               }
