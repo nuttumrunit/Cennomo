@@ -228,6 +228,7 @@ const liveSessions = new Map();
 const liveFrameState = new Map();
 const liveFailures = new Map();
 const wait = ms => new Promise(resolveWait => setTimeout(resolveWait, ms));
+const screencastOptions = { format: 'jpeg', quality: 64, maxWidth: 1120, maxHeight: 630, everyNthFrame: 1 };
 
 async function ensureLiveBrowser() {
   if (liveBrowser?.connected) return liveBrowser;
@@ -279,7 +280,7 @@ async function createLivePage(operator) {
         .catch(error => console.warn(`${operator.name}: screencast publish failed: ${error.message}`))
         .finally(() => { const current = liveFrameState.get(operator.name); if (current) current.busy = false; });
     });
-    await session.send('Page.startScreencast', { format: 'jpeg', quality: 64, maxWidth: 1120, maxHeight: 630, everyNthFrame: 1 });
+    await session.send('Page.startScreencast', screencastOptions);
     return page;
   } catch (error) {
     await page.close().catch(() => {});
@@ -330,6 +331,11 @@ async function liveLoop() {
           await Promise.race([
             (async () => {
               await page.bringToFront();
+              const session = liveSessions.get(operator.name);
+              if (session) {
+                await session.send('Page.stopScreencast').catch(() => {});
+                await session.send('Page.startScreencast', screencastOptions);
+              }
               await page.evaluate(() => {
                 const root = document.scrollingElement || document.documentElement;
                 const limit = Math.max(0, root.scrollHeight - innerHeight);
