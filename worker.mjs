@@ -341,9 +341,61 @@ async function liveLoop() {
               await page.evaluate(() => {
                 const root = document.scrollingElement || document.documentElement;
                 const limit = Math.max(0, root.scrollHeight - innerHeight);
-                const step = Math.max(140, Math.round(innerHeight * 0.28));
-                const next = scrollY + step >= limit - 8 ? 0 : scrollY + step;
-                scrollTo({ top: next, behavior: 'instant' });
+                const state = window.__cennomoBrowseState ||= { direction: 1, dwell: 0, turns: 0 };
+                const current = root.scrollTop;
+                if (state.dwell > 0) {
+                  state.dwell -= 1;
+                  return;
+                }
+                if (state.direction > 0 && current >= limit - 12) {
+                  state.direction = -1;
+                  state.dwell = 1;
+                  state.turns += 1;
+                  return;
+                }
+                if (state.direction < 0 && current <= 12) {
+                  state.direction = 1;
+                  state.dwell = 1;
+                  state.turns += 1;
+                  return;
+                }
+                const ratio = [0.2, 0.27, 0.34][state.turns % 3];
+                const step = Math.max(120, Math.round(innerHeight * ratio)) * state.direction;
+                scrollBy({ top: step, behavior: 'smooth' });
+              });
+              await wait(240);
+              await page.evaluate(() => {
+                document.getElementById('__cennomo_operator_vision__')?.remove();
+                const selectors = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"]';
+                const nodes = [...document.querySelectorAll(selectors)].filter(node => {
+                  if (node.closest('#__cennomo_operator_vision__')) return false;
+                  const rect = node.getBoundingClientRect();
+                  const style = getComputedStyle(node);
+                  return rect.width > 18 && rect.height > 12 && rect.bottom > 8 && rect.top < innerHeight - 8 && rect.right > 8 && rect.left < innerWidth - 8 && style.visibility !== 'hidden' && style.display !== 'none' && Number(style.opacity || 1) > 0;
+                });
+                if (!nodes.length) return;
+                const state = window.__cennomoBrowseState ||= { direction: 1, dwell: 0, turns: 0 };
+                state.target = (state.target || 0) % nodes.length;
+                const target = nodes[state.target];
+                state.target = (state.target + 1) % nodes.length;
+                const rect = target.getBoundingClientRect();
+                const labelText = (target.getAttribute('aria-label') || target.getAttribute('title') || target.textContent || target.getAttribute('placeholder') || target.tagName).replace(/\s+/g, ' ').trim().slice(0, 34);
+                const root = document.createElement('div');
+                root.id = '__cennomo_operator_vision__';
+                Object.assign(root.style, { position: 'fixed', inset: '0', pointerEvents: 'none', zIndex: '2147483647', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' });
+                const box = document.createElement('div');
+                Object.assign(box.style, { position: 'fixed', left: `${Math.max(2, rect.left - 3)}px`, top: `${Math.max(2, rect.top - 3)}px`, width: `${Math.min(innerWidth - Math.max(2, rect.left - 3) - 2, rect.width + 6)}px`, height: `${Math.min(innerHeight - Math.max(2, rect.top - 3) - 2, rect.height + 6)}px`, border: '1px solid #00ff47', boxShadow: '0 0 0 1px rgba(0,0,0,.7),0 0 14px rgba(0,255,71,.2)' });
+                const label = document.createElement('div');
+                label.textContent = `OBSERVE · ${target.tagName.toLowerCase()} · ${labelText || 'interactive element'}`;
+                Object.assign(label.style, { position: 'absolute', left: '-1px', bottom: '100%', maxWidth: '300px', padding: '3px 5px', color: '#001407', background: '#00ff47', fontSize: '8px', lineHeight: '1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' });
+                box.append(label);
+                const cursor = document.createElement('div');
+                Object.assign(cursor.style, { position: 'fixed', left: `${Math.min(innerWidth - 14, Math.max(4, rect.left + Math.min(rect.width * .62, rect.width - 4)))}px`, top: `${Math.min(innerHeight - 14, Math.max(4, rect.top + Math.min(rect.height * .56, rect.height - 4)))}px`, width: '11px', height: '11px', border: '1px solid #00ff47', borderRadius: '50%', boxShadow: '0 0 10px #00ff47', background: 'rgba(0,255,71,.12)' });
+                const scan = document.createElement('div');
+                Object.assign(scan.style, { position: 'fixed', left: '0', right: '0', top: '0', height: '1px', background: 'linear-gradient(90deg,transparent,#00ff47 35%,#00ff47 65%,transparent)', boxShadow: '0 0 12px rgba(0,255,71,.55)', opacity: '.65' });
+                root.append(box, cursor, scan);
+                document.documentElement.append(root);
+                scan.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${innerHeight}px)` }], { duration: 1100, easing: 'linear', fill: 'forwards' });
               });
               await wait(250);
               if (session && frameState && frameState.lastPublished === previousFrameAt && !frameState.busy) {
@@ -359,7 +411,7 @@ async function liveLoop() {
                 }
               }
             })(),
-            wait(2_000).then(() => { throw new Error('live page interaction timed out'); })
+            wait(3_000).then(() => { throw new Error('live page interaction timed out'); })
           ]);
           liveFailures.set(operator.name, 0);
         }
