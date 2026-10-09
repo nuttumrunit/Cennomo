@@ -23,7 +23,7 @@ loadEnvFile();
 const apiBase = process.env.CENNOMO_API_URL || `http://127.0.0.1:${process.env.PORT || 4185}`;
 const workerToken = process.env.CENNOMO_WORKER_TOKEN || '';
 const intervalMs = Math.max(15_000, Number(process.env.CENNOMO_WORKER_INTERVAL_MS || 60_000));
-const liveFrameIntervalMs = Math.max(750, Number(process.env.CENNOMO_LIVE_FRAME_INTERVAL_MS || 1_200));
+const liveFrameIntervalMs = Math.max(600, Number(process.env.CENNOMO_LIVE_FRAME_INTERVAL_MS || 850));
 const workerId = process.env.CENNOMO_WORKER_ID || `${process.env.COMPUTERNAME || 'worker'}-${process.pid}`;
 const workerStartedAt = new Date().toISOString();
 const chrome = process.env.CHROME_PATH || (process.platform === 'win32'
@@ -222,6 +222,9 @@ function screenshot(name, targetUrl) {
 
 let liveBrowser = null;
 let liveBrowserLaunch = null;
+let liveScrollPump = null;
+let liveScrollPumping = false;
+let liveCaptureCursor = 0;
 let liveSequence = 0;
 const livePages = new Map();
 const liveSessions = new Map();
@@ -230,6 +233,107 @@ const liveFailures = new Map();
 const liveBrowseState = new Map();
 const wait = ms => new Promise(resolveWait => setTimeout(resolveWait, ms));
 const screencastOptions = { format: 'jpeg', quality: 64, maxWidth: 1120, maxHeight: 630, everyNthFrame: 1 };
+
+async function installOperatorVision(page) {
+  await page.evaluate(() => {
+    if (window.__cennomoVisionUpdate && document.getElementById('__cennomo_operator_vision__')) return;
+    document.getElementById('__cennomo_operator_vision__')?.remove();
+    const root = document.createElement('div');
+    root.id = '__cennomo_operator_vision__';
+    root.innerHTML = '<div class="cv-box"><span></span></div><div class="cv-box"><span></span></div><div class="cv-pointer"><i></i><i></i><i></i><i></i><b></b><span>inspect</span></div>';
+    const style = document.createElement('style');
+    style.textContent = `#__cennomo_operator_vision__{position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.cv-box{position:fixed;display:none;border:1px solid rgba(0,255,71,.78);background:rgba(0,255,71,.025);box-shadow:0 0 14px rgba(0,255,71,.18),inset 0 0 8px rgba(0,255,71,.04);transition:transform .24s linear,width .24s linear,height .24s linear}.cv-box:before,.cv-box:after{content:"";position:absolute;width:9px;height:9px}.cv-box:before{left:-2px;top:-2px;border-left:2px solid #00ff47;border-top:2px solid #00ff47}.cv-box:after{right:-2px;bottom:-2px;border-right:2px solid #00ff47;border-bottom:2px solid #00ff47}.cv-box>span{position:absolute;left:-1px;bottom:calc(100% + 2px);max-width:230px;padding:3px 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#00ff47;color:#001506;font:8px/1 ui-monospace,SFMono-Regular,Consolas,monospace}.cv-pointer{position:fixed;left:0;top:0;transform:translate(var(--px,50vw),var(--py,50vh));transition:transform .72s cubic-bezier(.2,.72,.16,1)}.cv-pointer b{display:block;width:15px;height:20px;background:#00ff47;clip-path:polygon(0 0,0 100%,28% 70%,48% 100%,64% 90%,45% 61%,82% 60%);filter:drop-shadow(0 0 5px rgba(0,255,71,.9))}.cv-pointer i{position:absolute;left:5px;top:8px;width:4px;height:4px;border-radius:50%;background:#00ff47;box-shadow:0 0 6px rgba(0,255,71,.7);transition:transform .72s cubic-bezier(.2,.72,.16,1);opacity:.42}.cv-pointer i:nth-child(1){transform:translate(-9px,13px);opacity:.38}.cv-pointer i:nth-child(2){transform:translate(-17px,23px);opacity:.3}.cv-pointer i:nth-child(3){transform:translate(-24px,31px);opacity:.22}.cv-pointer i:nth-child(4){transform:translate(-30px,38px);opacity:.14}.cv-pointer>span{position:absolute;left:12px;top:18px;padding:2px 4px;border:1px solid rgba(0,255,71,.38);background:rgba(0,8,2,.84);color:#00ff47;font:7px/1 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.06em}`;
+    root.append(style);
+    (document.body || document.documentElement).append(root);
+    const state = window.__cennomoVisionState = { tracked: [], pointerIndex: 0, switchedAt: 0 };
+    const labelFor = node => (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('placeholder') || node.textContent || '').replace(/\s+/g, ' ').trim();
+    const usable = node => {
+      if (!node?.isConnected || node.closest('#__cennomo_operator_vision__')) return false;
+      const rect = node.getBoundingClientRect(), css = getComputedStyle(node);
+      const semantic = /^(H1|H2|H3|PRE|TABLE|ARTICLE)$/.test(node.tagName) || ['alert','dialog'].includes(node.getAttribute('role'));
+      if (labelFor(node).length < 2 || rect.width < 22 || rect.height < 14 || rect.width > innerWidth * (semantic ? .92 : .65) || rect.height > innerHeight * (semantic ? .6 : .42) || rect.bottom < 18 || rect.top > innerHeight - 18 || rect.right < 18 || rect.left > innerWidth - 18 || css.display === 'none' || css.visibility === 'hidden' || Number(css.opacity || 1) <= 0) return false;
+      const x = Math.max(1, Math.min(innerWidth - 2, rect.left + rect.width / 2));
+      const y = Math.max(1, Math.min(innerHeight - 2, rect.top + rect.height / 2));
+      const hit = document.elementFromPoint(x, y);
+      return Boolean(hit && (hit === node || node.contains(hit) || hit.contains(node)));
+    };
+    window.__cennomoVisionUpdate = () => {
+      const selector = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"],h1,h2,h3,pre,table,[role="alert"],[role="dialog"],article';
+      state.tracked = state.tracked.filter(usable);
+      if (state.tracked.length < 2) {
+        const candidates = [...document.querySelectorAll(selector)].filter(node => usable(node) && !state.tracked.includes(node));
+        candidates.sort((a, b) => {
+          const ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
+          const ac = Math.abs(ar.top + ar.height / 2 - innerHeight / 2), bc = Math.abs(br.top + br.height / 2 - innerHeight / 2);
+          return ac - bc;
+        });
+        for (const node of candidates) {
+          if (state.tracked.length >= 2) break;
+          const rect = node.getBoundingClientRect();
+          if (state.tracked.every(other => { const r = other.getBoundingClientRect(); return Math.hypot(rect.left-r.left, rect.top-r.top) > 90; })) state.tracked.push(node);
+        }
+      }
+      const boxes = [...root.querySelectorAll('.cv-box')];
+      boxes.forEach((box, index) => {
+        const node = state.tracked[index];
+        if (!node) { box.style.display = 'none'; return; }
+        const rect = node.getBoundingClientRect();
+        box.style.display = 'block';
+        box.style.transform = `translate(${Math.max(1,rect.left)}px,${Math.max(1,rect.top)}px)`;
+        box.style.width = `${Math.min(innerWidth-Math.max(1,rect.left),rect.width)}px`;
+        box.style.height = `${Math.min(innerHeight-Math.max(1,rect.top),rect.height)}px`;
+        box.firstElementChild.textContent = `${node.tagName.toLowerCase()} · ${labelFor(node).slice(0,42)}`;
+      });
+      const now = Date.now();
+      if (state.tracked.length > 1 && now - state.switchedAt > 3600) { state.pointerIndex = (state.pointerIndex + 1) % state.tracked.length; state.switchedAt = now; }
+      const focus = state.tracked[state.pointerIndex] || state.tracked[0], pointer = root.querySelector('.cv-pointer');
+      if (focus) {
+        const rect = focus.getBoundingClientRect();
+        pointer.style.display = 'block';
+        pointer.style.setProperty('--px', `${Math.max(8,Math.min(innerWidth-24,rect.left+rect.width*.58))}px`);
+        pointer.style.setProperty('--py', `${Math.max(8,Math.min(innerHeight-28,rect.top+rect.height*.58))}px`);
+      } else pointer.style.display = 'none';
+    };
+    window.__cennomoVisionUpdate();
+  });
+}
+
+function startLiveScrollPump() {
+  if (liveScrollPump) clearInterval(liveScrollPump);
+  liveScrollPump = setInterval(() => {
+    if (liveScrollPumping) return;
+    liveScrollPumping = true;
+    const entries = [...livePages.entries()];
+    (async () => {
+      await Promise.allSettled(entries.map(([, page]) => page.evaluate(() => {
+        const state = window.__cennomoNaturalReader;
+        if (!state || state.paused) return;
+        const root = document.scrollingElement || document.documentElement;
+        const limit = Math.max(0, root.scrollHeight - innerHeight);
+        const now = Date.now(), elapsed = Math.min(600, Math.max(0, now - (state.lastPump || now - 250)));
+        state.lastPump = now;
+        if (root.scrollTop < limit - 3) root.scrollTop = Math.min(limit, root.scrollTop + elapsed * .058);
+        window.__cennomoVisionUpdate?.();
+      })));
+      const captures = [];
+      for (let offset = 0; offset < Math.min(3, entries.length); offset += 1) captures.push(entries[(liveCaptureCursor + offset) % entries.length]);
+      liveCaptureCursor = entries.length ? (liveCaptureCursor + captures.length) % entries.length : 0;
+      await Promise.allSettled(captures.map(async ([name]) => {
+        const state = liveFrameState.get(name), session = liveSessions.get(name);
+        if (!state || !session || state.busy || state.suspended || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
+        state.busy = true;
+        state.lastPublished = Date.now();
+        try {
+          const frame = await session.send('Page.captureScreenshot', { format: 'jpeg', quality: 60, fromSurface: true, captureBeyondViewport: false });
+          if (frame?.data && state.operator) await publishLiveFrame(state.operator, frame.data);
+        } catch (error) {
+          console.warn(`${name}: active capture failed: ${error.message}`);
+        } finally { state.busy = false; }
+      }));
+    })().finally(() => { liveScrollPumping = false; });
+  }, 250);
+  liveScrollPump.unref?.();
+}
 
 async function ensureLiveBrowser() {
   if (liveBrowser?.connected) return liveBrowser;
@@ -246,7 +350,8 @@ async function ensureLiveBrowser() {
       ]
     });
     liveBrowser = browser;
-    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null; livePages.clear(); liveSessions.clear(); liveFrameState.clear(); liveBrowseState.clear(); });
+    startLiveScrollPump();
+    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null;if(liveScrollPump){clearInterval(liveScrollPump);liveScrollPump=null}livePages.clear(); liveSessions.clear(); liveFrameState.clear(); liveBrowseState.clear(); });
     const initial = (await browser.pages())[0];
     if (initial) await initial.close().catch(() => {});
     return browser;
@@ -267,10 +372,11 @@ async function createLivePage(operator) {
       if (page.url() === 'about:blank') throw error;
       console.warn(`${operator.name}: navigation settled partially: ${error.message}`);
     }
+    await installOperatorVision(page);
     const session = await page.createCDPSession();
     livePages.set(operator.name, page);
     liveSessions.set(operator.name, session);
-    liveFrameState.set(operator.name, { busy: false, suspended: false, lastPublished: 0 });
+    liveFrameState.set(operator.name, { busy: false, suspended: false, lastPublished: 0, operator });
     liveBrowseState.set(operator.name, { visited: new Set([page.url().split('#')[0]]), bottomSeen: 0, round: 1, recheckAt: 0 });
     session.on('Page.screencastFrame', payload => {
       void session.send('Page.screencastFrameAck', { sessionId: payload.sessionId }).catch(() => {});
@@ -343,21 +449,12 @@ async function liveLoop() {
               }
               await page.evaluate(() => {
                 if (window.__cennomoNaturalReader) return;
-                const state = window.__cennomoNaturalReader = { last: Date.now(), paused: false, seen: new Set() };
-                const tick = () => {
-                  const root = document.scrollingElement || document.documentElement;
-                  const limit = Math.max(0, root.scrollHeight - innerHeight);
-                  const now = Date.now();
-                  const elapsed = Math.min(1_500, Math.max(0, now - state.last));
-                  state.last = now;
-                  if (!state.paused && root.scrollTop < limit - 3) root.scrollTop = Math.min(limit, root.scrollTop + elapsed * .072);
-                };
-                state.timer = setInterval(tick, 100);
+                window.__cennomoNaturalReader = { paused: false, seen: new Set(), lastPump: Date.now() };
               });
+              await installOperatorVision(page);
               await wait(720);
               let navigateTo = '';
               const telemetry = await page.evaluate(() => {
-                document.getElementById('__cennomo_operator_vision__')?.remove();
                 const selectors = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"],h1,h2,h3,pre,table,[role="alert"],[role="dialog"],article';
                 const labelFor = node => (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('placeholder') || node.textContent || '').replace(/\s+/g, ' ').trim();
                 const nodes = [...document.querySelectorAll(selectors)].filter(node => {
@@ -441,7 +538,10 @@ async function liveLoop() {
                   finally { frameState.busy = false; }
                 }
               }
-              if (navigateTo) await page.goto(navigateTo, { waitUntil: 'domcontentloaded', timeout: 15_000 }).catch(error => console.warn(`${operator.name}: route navigation settled partially: ${error.message}`));
+              if (navigateTo) {
+                await page.goto(navigateTo, { waitUntil: 'domcontentloaded', timeout: 15_000 }).catch(error => console.warn(`${operator.name}: route navigation settled partially: ${error.message}`));
+                await installOperatorVision(page).catch(error => console.warn(`${operator.name}: vision install failed: ${error.message}`));
+              }
               if (frameState) frameState.suspended = false;
             })(),
             wait(25_000).then(() => { throw new Error('live page interaction timed out'); })
