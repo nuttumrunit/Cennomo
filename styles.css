@@ -513,7 +513,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .verified-stream-mark{position:absolute;z-index:12;top:34px;right:9px;display:flex;align-items:center;gap:5px;height:23px;padding:0 8px;border:1px solid rgba(0,255,71,.58);background:rgba(0,10,3,.88);color:var(--green);font:700 8px/1 var(--mono);letter-spacing:.06em;box-shadow:0 0 16px rgba(0,255,71,.12);backdrop-filter:blur(4px);white-space:nowrap}
 .verified-stream-mark[hidden]{display:none}
 .verified-stream-mark b{font-size:12px;line-height:1;color:var(--green);text-shadow:0 0 8px rgba(0,255,71,.7)}
-.operator-monitor[data-state="verified"] .feed-stage:before{content:"★  已经验证";position:absolute;z-index:12;top:7px;right:7px;display:flex;align-items:center;height:20px;padding:0 7px;border:1px solid rgba(0,255,71,.58);background:rgba(0,10,3,.88);color:var(--green);font:700 7px/1 var(--mono);letter-spacing:.06em;box-shadow:0 0 14px rgba(0,255,71,.14);white-space:nowrap}
+.operator-monitor[data-state="verified"] .feed-stage:before{content:"★  VERIFIED";position:absolute;z-index:12;top:7px;right:7px;display:flex;align-items:center;height:20px;padding:0 7px;border:1px solid rgba(0,255,71,.58);background:rgba(0,10,3,.88);color:var(--green);font:700 7px/1 var(--mono);letter-spacing:.06em;box-shadow:0 0 14px rgba(0,255,71,.14);white-space:nowrap}
 .room-live-layer>.verified-stream-mark{top:10px;right:12px}
 @media(max-width:760px){.verified-stream-mark{right:6px;padding:0 6px}.verified-stream-mark span{font-size:7px}}
 #route-live .crawl-tail{position:absolute;left:0;right:0;bottom:28px;height:71px;z-index:9;padding:9px 12px 0;border-top:1px solid #273028;background:#000;font:9px var(--mono)}
