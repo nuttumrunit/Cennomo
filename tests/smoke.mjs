@@ -61,6 +61,10 @@ await check('Treasury value rendered', () => page.$eval('.treasury-total strong'
 await check('Treasury events rendered', () => page.$eval('#treasuryEvents', node => node.children.length > 0));
 await check('Treasury wallet links to Solscan', () => page.$eval('#treasuryExplorer', node => !node.hidden && node.href.startsWith('https://solscan.io/account/')));
 await check('Treasury reports real settlement counters', () => page.$eval('#treasurySettlements', node => /^\d+$/.test(node.textContent.trim())));
+await check('Treasury reports token live', () => page.$eval('#treasuryPhase', node => node.textContent === 'TOKEN LIVE'));
+await check('Treasury publishes official mint', () => page.$eval('#treasuryMint', node => node.textContent === '8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump'));
+await check('Treasury links official Pump.fun market', () => page.$eval('#treasuryPumpfun', node => node.href === 'https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump'));
+await check('Treasury removed prelaunch heading', () => page.$eval('#route-treasury .section-head b', node => node.textContent === 'LIVE NETWORK TREASURY'));
 
 await page.click('[data-route="deploy"]');
 await check('Deploy recognizes launched CA', () => page.$eval('#spawnButton', node => !node.disabled && node.textContent.includes('connect wallet')));
