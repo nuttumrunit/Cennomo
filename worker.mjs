@@ -227,6 +227,7 @@ const livePages = new Map();
 const liveSessions = new Map();
 const liveFrameState = new Map();
 const liveFailures = new Map();
+const liveBrowseState = new Map();
 const wait = ms => new Promise(resolveWait => setTimeout(resolveWait, ms));
 const screencastOptions = { format: 'jpeg', quality: 64, maxWidth: 1120, maxHeight: 630, everyNthFrame: 1 };
 
@@ -245,7 +246,7 @@ async function ensureLiveBrowser() {
       ]
     });
     liveBrowser = browser;
-    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null; livePages.clear(); liveSessions.clear(); liveFrameState.clear(); });
+    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null; livePages.clear(); liveSessions.clear(); liveFrameState.clear(); liveBrowseState.clear(); });
     const initial = (await browser.pages())[0];
     if (initial) await initial.close().catch(() => {});
     return browser;
@@ -270,6 +271,7 @@ async function createLivePage(operator) {
     livePages.set(operator.name, page);
     liveSessions.set(operator.name, session);
     liveFrameState.set(operator.name, { busy: false, suspended: false, lastPublished: 0 });
+    liveBrowseState.set(operator.name, { visited: new Set([page.url().split('#')[0]]), bottomSeen: 0, round: 1, recheckAt: 0 });
     session.on('Page.screencastFrame', payload => {
       void session.send('Page.screencastFrameAck', { sessionId: payload.sessionId }).catch(() => {});
       const state = liveFrameState.get(operator.name);
@@ -287,6 +289,7 @@ async function createLivePage(operator) {
     livePages.delete(operator.name);
     liveSessions.delete(operator.name);
     liveFrameState.delete(operator.name);
+    liveBrowseState.delete(operator.name);
     throw error;
   }
 }
@@ -317,7 +320,7 @@ async function liveLoop() {
       const operators = Array.isArray(snapshot.operators) ? snapshot.operators : [];
       const activeNames = new Set(operators.map(operator => operator.name));
       for (const [name, page] of livePages) {
-        if (!activeNames.has(name)) { await page.close().catch(() => {}); livePages.delete(name); liveSessions.delete(name); liveFrameState.delete(name); }
+        if (!activeNames.has(name)) { await page.close().catch(() => {}); livePages.delete(name); liveSessions.delete(name); liveFrameState.delete(name); liveBrowseState.delete(name); }
       }
       const missing = operators.filter(operator => !livePages.has(operator.name));
       await Promise.allSettled(missing.map(async operator => {
@@ -339,31 +342,20 @@ async function liveLoop() {
                 await session.send('Page.startScreencast', screencastOptions);
               }
               await page.evaluate(() => {
-                const root = document.scrollingElement || document.documentElement;
-                const limit = Math.max(0, root.scrollHeight - innerHeight);
-                const state = window.__cennomoBrowseState ||= { direction: 1, dwell: 0, turns: 0 };
-                const current = root.scrollTop;
-                if (state.dwell > 0) {
-                  state.dwell -= 1;
-                  return;
-                }
-                if (state.direction > 0 && current >= limit - 12) {
-                  state.direction = -1;
-                  state.dwell = 2;
-                  state.turns += 1;
-                  return;
-                }
-                if (state.direction < 0 && current <= 12) {
-                  state.direction = 1;
-                  state.dwell = 2;
-                  state.turns += 1;
-                  return;
-                }
-                const ratio = [0.08, 0.11, 0.14][state.turns % 3];
-                const step = Math.max(70, Math.round(innerHeight * ratio)) * state.direction;
-                scrollBy({ top: step, behavior: 'smooth' });
+                if (window.__cennomoNaturalReader) return;
+                const state = window.__cennomoNaturalReader = { last: performance.now(), paused: false };
+                const tick = now => {
+                  const root = document.scrollingElement || document.documentElement;
+                  const limit = Math.max(0, root.scrollHeight - innerHeight);
+                  const elapsed = Math.min(250, Math.max(0, now - state.last));
+                  state.last = now;
+                  if (!state.paused && root.scrollTop < limit - 3) root.scrollTop = Math.min(limit, root.scrollTop + elapsed * .045);
+                  requestAnimationFrame(tick);
+                };
+                requestAnimationFrame(tick);
               });
-              await wait(240);
+              await wait(720);
+              let navigateTo = '';
               const telemetry = await page.evaluate(() => {
                 document.getElementById('__cennomo_operator_vision__')?.remove();
                 const selectors = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"]';
@@ -379,18 +371,55 @@ async function liveLoop() {
                   return Boolean(hit && (node === hit || node.contains(hit) || hit.contains(node)));
                 });
                 const scrollRoot = document.scrollingElement || document.documentElement;
-                if (!nodes.length) return { actionableCount: 0, direction: window.__cennomoBrowseState?.direction || 1, progress: scrollRoot.scrollHeight > innerHeight ? scrollRoot.scrollTop / (scrollRoot.scrollHeight - innerHeight) : 0, targets: [] };
-                const state = window.__cennomoBrowseState ||= { direction: 1, dwell: 0, turns: 0 };
-                state.target = (state.target || 0) % nodes.length;
-                const ordered = [...nodes.slice(state.target), ...nodes.slice(0, state.target)];
-                state.target = (state.target + Math.max(1, Math.floor(nodes.length / 5))) % nodes.length;
-                const targets = ordered.slice(0, 6).map(target => {
+                const limit = Math.max(0, scrollRoot.scrollHeight - innerHeight);
+                const progress = limit ? scrollRoot.scrollTop / limit : 1;
+                const links = [...document.querySelectorAll('a[href]')].map(link => {
+                  try {
+                    const url = new URL(link.href, location.href);
+                    if (url.origin !== location.origin || !/^https?:$/.test(url.protocol)) return null;
+                    url.hash = '';
+                    if (url.href === location.href.split('#')[0] || /\.(?:pdf|zip|png|jpe?g|gif|svg|webp|mp4|mp3)$/i.test(url.pathname) || /\b(?:logout|signout|login|signin|auth)\b/i.test(url.pathname)) return null;
+                    const label = labelFor(link);
+                    return label.length >= 2 ? { url: url.href, label: label.slice(0, 80) } : null;
+                  } catch { return null; }
+                }).filter(Boolean);
+                const targets = nodes.slice(0, 6).map(target => {
                   const rect = target.getBoundingClientRect();
                   const label = labelFor(target).slice(0, 34);
                   return { tag: target.tagName.toLowerCase(), label, x: Math.max(0, rect.left) / innerWidth, y: Math.max(0, rect.top) / innerHeight, width: Math.min(innerWidth - Math.max(0, rect.left), rect.width) / innerWidth, height: Math.min(innerHeight - Math.max(0, rect.top), rect.height) / innerHeight };
                 });
-                return { actionableCount: nodes.length, direction: state.direction, progress: scrollRoot.scrollHeight > innerHeight ? scrollRoot.scrollTop / (scrollRoot.scrollHeight - innerHeight) : 0, targets };
+                return { actionableCount: nodes.length, direction: 1, progress, targets, atBottom: progress >= .995, links, currentUrl: location.href, pageTitle: document.title };
               });
+              const browse = liveBrowseState.get(operator.name) || { visited: new Set(), bottomSeen: 0, round: 1, recheckAt: 0 };
+              browse.visited.add(telemetry.currentUrl.split('#')[0]);
+              telemetry.auditRound = browse.round;
+              telemetry.phase = 'reading';
+              if (telemetry.atBottom) browse.bottomSeen += 1; else browse.bottomSeen = 0;
+              if (browse.bottomSeen >= 2) {
+                const next = telemetry.links.find(link => !browse.visited.has(link.url));
+                if (next) {
+                  telemetry.phase = 'opening-next-page';
+                  browse.visited.add(next.url);
+                  browse.bottomSeen = 0;
+                  navigateTo = next.url;
+                } else {
+                  telemetry.phase = 'awaiting-recheck';
+                  await page.evaluate(() => { if (window.__cennomoNaturalReader) window.__cennomoNaturalReader.paused = true; });
+                  if (!browse.recheckAt) browse.recheckAt = Date.now() + 5 * 60_000;
+                }
+              }
+              if (browse.recheckAt && Date.now() >= browse.recheckAt) {
+                browse.round += 1;
+                browse.visited.clear();
+                browse.bottomSeen = 0;
+                browse.recheckAt = 0;
+                navigateTo = operator.target_url;
+                telemetry.phase = 'opening-next-page';
+                telemetry.auditRound = browse.round;
+              }
+              liveBrowseState.set(operator.name, browse);
+              delete telemetry.links;
+              delete telemetry.atBottom;
               await wait(250);
               if (session && frameState) {
                 const fallback = await Promise.race([
@@ -404,9 +433,10 @@ async function liveLoop() {
                   finally { frameState.busy = false; }
                 }
               }
+              if (navigateTo) await page.goto(navigateTo, { waitUntil: 'domcontentloaded', timeout: 15_000 }).catch(error => console.warn(`${operator.name}: route navigation settled partially: ${error.message}`));
               if (frameState) frameState.suspended = false;
             })(),
-            wait(3_000).then(() => { throw new Error('live page interaction timed out'); })
+            wait(25_000).then(() => { throw new Error('live page interaction timed out'); })
           ]);
           liveFailures.set(operator.name, 0);
         }
@@ -421,6 +451,7 @@ async function liveLoop() {
             livePages.delete(operator.name);
             liveSessions.delete(operator.name);
             liveFrameState.delete(operator.name);
+            liveBrowseState.delete(operator.name);
             liveFailures.delete(operator.name);
           }
         }
@@ -431,6 +462,7 @@ async function liveLoop() {
       if (liveBrowser) await liveBrowser.close().catch(() => {});
       liveBrowser = null;
       livePages.clear();
+      liveBrowseState.clear();
     }
     await wait(liveFrameIntervalMs);
   }

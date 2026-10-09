@@ -12,7 +12,7 @@ await page.setViewport({ width: 1440, height: 900 });
 for (const route of ['live', 'operators', 'skills', 'territories', 'treasury', 'deploy', 'manual']) {
   await page.goto(`${base}?v=production-3#${route}`, { waitUntil: 'networkidle2' });
   await page.waitForFunction(() => document.documentElement.dataset.api === 'online');
-  if (route === 'live') await page.waitForFunction(() => document.querySelectorAll('#stageVision .dom-target').length >= 2, { timeout: 60_000 });
+  if (route === 'live') await page.waitForFunction(() => document.querySelector('#stageVision .live-proof'), { timeout: 60_000 });
   if (route === 'operators') {
     await page.waitForFunction(() => document.querySelectorAll('.operator-live-frame.connected').length === 12, { timeout: 60_000 });
     const firstFrames = await page.$$eval('.operator-live-frame', images => images.map(image => image.dataset.framePath));
@@ -20,6 +20,9 @@ for (const route of ['live', 'operators', 'skills', 'territories', 'treasury', '
       const current = [...document.querySelectorAll('.operator-live-frame')].map(image => image.dataset.framePath);
       return current.length === 12 && current.every((path, index) => path && path !== previous[index]);
     }, { timeout: 40_000 }, firstFrames);
+    await page.click('.operator-monitor button');
+    await page.waitForSelector('#liveRoom.open #roomLiveFrame.connected', { timeout: 20_000 });
+    await page.waitForSelector('#roomVision .live-proof', { timeout: 20_000 });
   }
   await page.screenshot({ path: resolve(output, `${route}.png`) });
 }

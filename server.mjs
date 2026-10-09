@@ -974,6 +974,10 @@ async function api(request, response, url) {
       actionableCount: Math.max(0, Math.min(999, Number(body.telemetry.actionableCount || 0))),
       direction: Number(body.telemetry.direction) < 0 ? -1 : 1,
       progress: number(body.telemetry.progress),
+      phase: ['reading', 'opening-next-page', 'awaiting-recheck'].includes(body.telemetry.phase) ? body.telemetry.phase : 'reading',
+      currentUrl: String(body.telemetry.currentUrl || '').slice(0, 1000),
+      pageTitle: String(body.telemetry.pageTitle || '').replace(/[\r\n\t]+/g, ' ').slice(0, 160),
+      auditRound: Math.max(1, Math.min(9999, Number(body.telemetry.auditRound || 1))),
       targets: (Array.isArray(body.telemetry.targets) ? body.telemetry.targets : []).slice(0, 6).map(target => ({
         tag: String(target?.tag || 'element').replace(/[^a-z0-9-]/gi, '').slice(0, 18),
         label: String(target?.label || 'interactive element').replace(/[\r\n\t]+/g, ' ').slice(0, 48),
