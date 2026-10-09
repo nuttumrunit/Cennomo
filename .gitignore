@@ -5,5 +5,7 @@ test-artifacts/
 dist-pages/
 node_modules/
 .production-skills/
+.env.production
+.deploy/
 crawlnet-live-ref.png
 stream-runner.mjs

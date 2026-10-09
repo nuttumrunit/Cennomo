@@ -1,0 +1,45 @@
+name: Deploy Cennomo backend
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        env:
+          SERVER_HOST: ${{ vars.CENNOMO_SERVER_HOST }}
+          SSH_PRIVATE_KEY: ${{ secrets.CENNOMO_SSH_PRIVATE_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/cennomo
+          chmod 600 ~/.ssh/cennomo
+          ssh-keyscan -T 20 -H "$SERVER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Install and deploy
+        env:
+          SERVER_HOST: ${{ vars.CENNOMO_SERVER_HOST }}
+          BACKEND_HOST: ${{ vars.CENNOMO_BACKEND_HOST }}
+          WEB_ORIGIN: https://nuttumrunit.github.io
+        run: |
+          ssh -i ~/.ssh/cennomo -o IdentitiesOnly=yes root@"$SERVER_HOST" \
+            "CENNOMO_HOST='$BACKEND_HOST' CENNOMO_WEB_ORIGIN='$WEB_ORIGIN' bash -s" <<'REMOTE'
+          set -euo pipefail
+          export DEBIAN_FRONTEND=noninteractive
+          if ! command -v docker >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y docker.io docker-compose-v2 git openssl
+            systemctl enable --now docker
+          fi
+          if [[ ! -d /opt/cennomo/.git ]]; then
+            git clone https://github.com/nuttumrunit/Cennomo.git /opt/cennomo
+          else
+            git -C /opt/cennomo pull --ff-only
+          fi
+          cd /opt/cennomo
+          CENNOMO_HOST="$CENNOMO_HOST" CENNOMO_WEB_ORIGIN="$CENNOMO_WEB_ORIGIN" bash deploy/bootstrap.sh
+          REMOTE
