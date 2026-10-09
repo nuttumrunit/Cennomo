@@ -343,16 +343,16 @@ async function liveLoop() {
               }
               await page.evaluate(() => {
                 if (window.__cennomoNaturalReader) return;
-                const state = window.__cennomoNaturalReader = { last: performance.now(), paused: false };
-                const tick = now => {
+                const state = window.__cennomoNaturalReader = { last: Date.now(), paused: false, seen: new Set() };
+                const tick = () => {
                   const root = document.scrollingElement || document.documentElement;
                   const limit = Math.max(0, root.scrollHeight - innerHeight);
-                  const elapsed = Math.min(250, Math.max(0, now - state.last));
+                  const now = Date.now();
+                  const elapsed = Math.min(1_500, Math.max(0, now - state.last));
                   state.last = now;
-                  if (!state.paused && root.scrollTop < limit - 3) root.scrollTop = Math.min(limit, root.scrollTop + elapsed * .045);
-                  requestAnimationFrame(tick);
+                  if (!state.paused && root.scrollTop < limit - 3) root.scrollTop = Math.min(limit, root.scrollTop + elapsed * .072);
                 };
-                requestAnimationFrame(tick);
+                state.timer = setInterval(tick, 100);
               });
               await wait(720);
               let navigateTo = '';
@@ -383,7 +383,14 @@ async function liveLoop() {
                     return label.length >= 2 ? { url: url.href, label: label.slice(0, 80) } : null;
                   } catch { return null; }
                 }).filter(Boolean);
-                const targets = nodes.slice(0, 6).map(target => {
+                const reader = window.__cennomoNaturalReader;
+                const unseen = nodes.filter(target => {
+                  const key = `${target.tagName}:${labelFor(target).toLowerCase()}`;
+                  return Boolean(reader && !reader.seen.has(key));
+                });
+                const selectedTargets = unseen.slice(0, 6);
+                selectedTargets.forEach(target => reader.seen.add(`${target.tagName}:${labelFor(target).toLowerCase()}`));
+                const targets = selectedTargets.map(target => {
                   const rect = target.getBoundingClientRect();
                   const label = labelFor(target).slice(0, 34);
                   return { tag: target.tagName.toLowerCase(), label, x: Math.max(0, rect.left) / innerWidth, y: Math.max(0, rect.top) / innerHeight, width: Math.min(innerWidth - Math.max(0, rect.left), rect.width) / innerWidth, height: Math.min(innerHeight - Math.max(0, rect.top), rect.height) / innerHeight };

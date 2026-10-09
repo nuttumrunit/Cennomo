@@ -12,7 +12,10 @@ await page.setViewport({ width: 1440, height: 900 });
 for (const route of ['live', 'operators', 'skills', 'territories', 'treasury', 'deploy', 'manual']) {
   await page.goto(`${base}?v=production-3#${route}`, { waitUntil: 'networkidle2' });
   await page.waitForFunction(() => document.documentElement.dataset.api === 'online');
-  if (route === 'live') await page.waitForFunction(() => document.querySelector('#stageVision .live-proof'), { timeout: 60_000 });
+  if (route === 'live') {
+    await page.waitForFunction(() => document.querySelector('#stageVision .live-proof'), { timeout: 60_000 });
+    await page.waitForFunction(() => document.querySelector('#stageVision .dom-target-once'), { timeout: 60_000 });
+  }
   if (route === 'operators') {
     await page.waitForFunction(() => document.querySelectorAll('.operator-live-frame.connected').length === 12, { timeout: 60_000 });
     const firstFrames = await page.$$eval('.operator-live-frame', images => images.map(image => image.dataset.framePath));
