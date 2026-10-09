@@ -23,7 +23,7 @@ loadEnvFile();
 const apiBase = process.env.CENNOMO_API_URL || `http://127.0.0.1:${process.env.PORT || 4185}`;
 const workerToken = process.env.CENNOMO_WORKER_TOKEN || '';
 const intervalMs = Math.max(15_000, Number(process.env.CENNOMO_WORKER_INTERVAL_MS || 60_000));
-const liveFrameIntervalMs = Math.max(2_500, Number(process.env.CENNOMO_LIVE_FRAME_INTERVAL_MS || 4_000));
+const liveFrameIntervalMs = Math.max(750, Number(process.env.CENNOMO_LIVE_FRAME_INTERVAL_MS || 1_200));
 const workerId = process.env.CENNOMO_WORKER_ID || `${process.env.COMPUTERNAME || 'worker'}-${process.pid}`;
 const workerStartedAt = new Date().toISOString();
 const chrome = process.env.CHROME_PATH || (process.platform === 'win32'
@@ -358,13 +358,14 @@ async function liveLoop() {
               let navigateTo = '';
               const telemetry = await page.evaluate(() => {
                 document.getElementById('__cennomo_operator_vision__')?.remove();
-                const selectors = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"]';
+                const selectors = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"],h1,h2,h3,pre,table,[role="alert"],[role="dialog"],article';
                 const labelFor = node => (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('placeholder') || node.textContent || '').replace(/\s+/g, ' ').trim();
                 const nodes = [...document.querySelectorAll(selectors)].filter(node => {
                   if (node.closest('#__cennomo_operator_vision__')) return false;
                   const rect = node.getBoundingClientRect();
                   const style = getComputedStyle(node);
-                  if (labelFor(node).length < 2 || rect.width < 18 || rect.height < 12 || rect.width > innerWidth * .58 || rect.height > innerHeight * .36 || rect.bottom <= 8 || rect.top >= innerHeight - 8 || rect.right <= 8 || rect.left >= innerWidth - 8 || style.visibility === 'hidden' || style.display === 'none' || Number(style.opacity || 1) <= 0) return false;
+                  const semantic = /^(H1|H2|H3|PRE|TABLE|ARTICLE)$/.test(node.tagName) || ['alert','dialog'].includes(node.getAttribute('role'));
+                  if (labelFor(node).length < 2 || rect.width < 18 || rect.height < 12 || rect.width > innerWidth * (semantic ? .9 : .58) || rect.height > innerHeight * (semantic ? .55 : .36) || rect.bottom <= 8 || rect.top >= innerHeight - 8 || rect.right <= 8 || rect.left >= innerWidth - 8 || style.visibility === 'hidden' || style.display === 'none' || Number(style.opacity || 1) <= 0) return false;
                   const x = Math.max(1, Math.min(innerWidth - 2, rect.left + rect.width / 2));
                   const y = Math.max(1, Math.min(innerHeight - 2, rect.top + rect.height / 2));
                   const hit = document.elementFromPoint(x, y);

@@ -15,6 +15,7 @@ for (const route of ['live', 'operators', 'skills', 'territories', 'treasury', '
   if (route === 'live') {
     await page.waitForFunction(() => document.querySelector('#stageVision .live-proof'), { timeout: 60_000 });
     await page.waitForFunction(() => document.querySelector('#stageVision .dom-target-once'), { timeout: 60_000 });
+    await page.waitForFunction(() => document.querySelector('#stageVision .operator-pointer'), { timeout: 60_000 });
   }
   if (route === 'operators') {
     await page.waitForFunction(() => document.querySelectorAll('.operator-live-frame.connected').length === 12, { timeout: 60_000 });
