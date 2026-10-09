@@ -26,9 +26,23 @@ if [[ ! -f .env.production ]]; then
     'SOLANA_CLUSTER=mainnet-beta' \
     'SOLANA_RPC_URL=https://api.mainnet-beta.solana.com' \
     'CENNOMO_BURN_AMOUNT=10000' \
-    'PUMPFUN_URL=https://pump.fun/' \
+    'CENNOMO_TOKEN_MINT=8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump' \
+    'PUMPFUN_URL=https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump' \
     'CENNOMO_TREASURY_ADDRESS=BRSHFhFophdKrfoiFRFEGoWoUonJmWtW8JSuAnvsAcCL' \
     'CENNOMO_DEFAULT_CALL_FEE_LAMPORTS=0' > .env.production
+fi
+
+# Public launch values are reconciled on every deployment. This keeps the
+# website, burn verification and Pump.fun destination on the same mint.
+if grep -q '^CENNOMO_TOKEN_MINT=' .env.production; then
+  sed -i 's|^CENNOMO_TOKEN_MINT=.*$|CENNOMO_TOKEN_MINT=8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump|' .env.production
+else
+  printf '%s\n' 'CENNOMO_TOKEN_MINT=8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump' >> .env.production
+fi
+if grep -q '^PUMPFUN_URL=' .env.production; then
+  sed -i 's|^PUMPFUN_URL=.*$|PUMPFUN_URL=https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump|' .env.production
+else
+  printf '%s\n' 'PUMPFUN_URL=https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump' >> .env.production
 fi
 
 # Keep the public browser allowlist current on every deployment. Secrets and

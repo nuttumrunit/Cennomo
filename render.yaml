@@ -39,8 +39,10 @@ services:
         value: https://api.mainnet-beta.solana.com
       - key: CENNOMO_BURN_AMOUNT
         value: 10000
+      - key: CENNOMO_TOKEN_MINT
+        value: 8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump
       - key: PUMPFUN_URL
-        value: https://pump.fun/
+        value: https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump
       - key: CENNOMO_TREASURY_ADDRESS
         value: BRSHFhFophdKrfoiFRFEGoWoUonJmWtW8JSuAnvsAcCL
       - key: CENNOMO_DEFAULT_CALL_FEE_LAMPORTS

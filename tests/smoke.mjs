@@ -63,7 +63,7 @@ await check('Treasury wallet links to Solscan', () => page.$eval('#treasuryExplo
 await check('Treasury reports real settlement counters', () => page.$eval('#treasurySettlements', node => /^\d+$/.test(node.textContent.trim())));
 
 await page.click('[data-route="deploy"]');
-await check('Deploy correctly locked without CA', () => page.$eval('#spawnButton', node => node.disabled && node.textContent.includes('TBA')));
+await check('Deploy recognizes launched CA', () => page.$eval('#spawnButton', node => !node.disabled && node.textContent.includes('connect wallet')));
 await page.click('#connectWallet');
 await page.waitForSelector('#walletModal.open');
 await check('Wallet selector opens', () => page.$eval('#walletModal', node => node.getAttribute('aria-hidden') === 'false'));
@@ -80,7 +80,8 @@ await check('Manual Deployment chapter works', () => page.$eval('#manual-deploym
 
 await check('X link configured', () => page.$eval('.x-link', node => node.href === 'https://x.com/cennomonx'));
 await check('Hugging Face source link configured', () => page.$eval('.hf-link', node => node.href === 'https://huggingface.co/spaces/Cennomo/Cennomo/tree/main'));
-await check('Pump link configured', () => page.$eval('.buy', node => node.href.startsWith('https://pump.fun/')));
+await check('CA configured', () => page.$eval('.ca-row code', node => node.textContent === '8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump'));
+await check('Pump link configured', () => page.$eval('.buy', node => node.href === 'https://pump.fun/coin/8x4a5m2NvC6gvyexsXbnRFwMX9L3G9vTQfEnnsdgpump'));
 
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
 await page.goto(`${base}#live`, { waitUntil: 'networkidle2', timeout: 30_000 });
