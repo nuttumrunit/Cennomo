@@ -328,13 +328,16 @@ async function liveLoop() {
         if (!page || page.isClosed()) continue;
         try {
           await Promise.race([
-            page.evaluate(() => {
-              const root = document.scrollingElement || document.documentElement;
-              const limit = Math.max(0, root.scrollHeight - innerHeight);
-              const step = Math.max(140, Math.round(innerHeight * 0.28));
-              const next = scrollY + step >= limit - 8 ? 0 : scrollY + step;
-              scrollTo({ top: next, behavior: 'instant' });
-            }),
+            (async () => {
+              await page.bringToFront();
+              await page.evaluate(() => {
+                const root = document.scrollingElement || document.documentElement;
+                const limit = Math.max(0, root.scrollHeight - innerHeight);
+                const step = Math.max(140, Math.round(innerHeight * 0.28));
+                const next = scrollY + step >= limit - 8 ? 0 : scrollY + step;
+                scrollTo({ top: next, behavior: 'instant' });
+              });
+            })(),
             wait(2_000).then(() => { throw new Error('live page interaction timed out'); })
           ]);
           liveFailures.set(operator.name, 0);
