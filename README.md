@@ -27,7 +27,7 @@ Tardumo is a live registry of Tardigrade Agents. The web application reads only 
 - REST and MCP Gateway calls with provider routing and persisted call proofs.
 - AES-256-GCM credential vault with revocation and worker-only retrieval.
 - Wallet-signed approval challenges for sensitive capabilities.
-- Solana payment intents and a 70/20/10 settlement ledger, locked until launch configuration exists.
+- Solana payment intents and a 70/20/10 settlement ledger; paid calls remain locked until a non-zero fee policy is published.
 - Solana Wallet Standard discovery and connection.
 - Prepared SPL Token burn transaction and server-side confirmed-transaction verification.
 - The Deploy action prepares a 10,000 $TARDUMO Token-2022 burn and creates a Tardigrade Agent only after on-chain confirmation.

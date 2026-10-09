@@ -37,7 +37,7 @@
 - `/api/v1/skills` 返回 12 个工具。
 - Pages 的 Gateway 页面显示 `GATEWAY ONLINE`。
 - Treasury 地址为 `AoFRLLN3GjGcz5BxNuRTqLNDYSgrbhmYggUNotbDAHNF`。
-- CA 仍为 `TBA`，Deploy 和付费结算保持锁定。
+- CA 为 `Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump`，Deploy 已启用；付费结算在非零调用费策略发布前保持锁定。
 - 7 个凭证型 Operator 保持 `learning`，直到凭证真实验证通过。
 
 ## 四、后续自定义域名

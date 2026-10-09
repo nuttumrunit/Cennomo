@@ -49,12 +49,12 @@ const approvalState = await request(`/api/v1/approvals/${approval.approvalId}`);
 check('approval is pending signature', approvalState.status === 'pending');
 
 const settlement = await request('/api/v1/settlements');
-check('settlement safely locked before launch', settlement.enabled === false && settlement.split.owner === 70);
+check('settlement safely locked without fee policy', settlement.enabled === false && settlement.split.owner === 70);
 await request('/api/v1/payment-intents', {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ skill: 'quote.fetch', wallet: '11111111111111111111111111111111' })
 }, 503);
-checks.push('payment intents reject fake prelaunch settlement');
+checks.push('payment intents reject settlement without a fee policy');
 
 console.log(`Core integration test passed: ${checks.length} checks`);
 for (const name of checks) console.log(`  ✓ ${name}`);
