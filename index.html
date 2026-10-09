@@ -50,7 +50,7 @@
           <div class="feed-tabs" role="tablist" aria-label="Operator live views"><button class="active" data-feed="browser">browser</button><button data-feed="actions">actions</button><button data-feed="proof">proof</button></div>
           <div class="browser-feed feed-view active" id="browserFeed">
             <div class="browser-chrome"><i></i><i></i><i></i><span id="liveUrl">https://docs.stripe.com/api/invoices/create</span><b>LIVE</b></div>
-            <img class="crawl-browser-frame" alt="Latest Operator browser evidence">
+            <video class="crawl-browser-frame" muted autoplay playsinline preload="none" aria-label="Live Operator browser video"></video>
             <div class="dom-vision-layer" id="stageVision" aria-hidden="true"></div>
             <div class="feed-trace"><span id="feedTime">--:--:--</span><b id="feedPhase">WAITING</b><code id="feedAction">waiting for worker evidence</code><em>registry sourced</em></div>
           </div>
@@ -202,7 +202,7 @@
     <div class="live-room-grid">
       <section class="broadcast">
         <header><div><i></i><i></i><i></i><span id="roomUrl">https://station.jup.ag/docs/apis/swap-api</span></div><b><i></i> LIVE BROWSER SESSION</b></header>
-        <div class="room-live-layer"><img id="roomLiveFrame" class="room-live-frame" alt="Live Operator browser stream"><div class="dom-vision-layer" id="roomVision" aria-hidden="true"></div><div id="roomFeedWaiting"><div class="feed-reticle"><i></i><i></i><i></i><i></i></div><b>WAITING FOR OPERATOR VIDEO</b><span id="roomFeedPath">stream gateway is not connected</span></div></div>
+        <div class="room-live-layer"><video id="roomLiveFrame" class="room-live-frame" muted autoplay playsinline preload="none" aria-label="Live Operator browser video"></video><div class="dom-vision-layer" id="roomVision" aria-hidden="true"></div><div id="roomFeedWaiting"><div class="feed-reticle"><i></i><i></i><i></i><i></i></div><b>STARTING LIVE VIDEO</b><span id="roomFeedPath">waiting for browser encoder</span></div></div>
         <div class="broadcast-body"><main><div class="broadcast-path"><span>OBSERVE</span><b id="roomEndpoint">—</b><em id="roomHttp">WAITING</em></div><h3>Registry evidence</h3><div class="broadcast-code" id="broadcastCode"><p><i>01</i><code>route</code><span id="roomEvidenceRoute">not published</span></p><p><i>02</i><code>last seen</code><span id="roomEvidenceSeen">never</span></p><p><i>03</i><code>proof</code><span id="roomEvidenceProof">not available</span></p></div><div class="room-pointer"><i></i><span id="roomPointerName">waiting for registry</span></div></main></div>
       </section>
       <aside class="room-side">

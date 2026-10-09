@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import puppeteer from 'puppeteer-core';
 
@@ -231,8 +231,60 @@ const liveSessions = new Map();
 const liveFrameState = new Map();
 const liveFailures = new Map();
 const liveBrowseState = new Map();
+const liveVideoRecorders = new Map();
 const wait = ms => new Promise(resolveWait => setTimeout(resolveWait, ms));
 const screencastOptions = { format: 'jpeg', quality: 64, maxWidth: 1120, maxHeight: 630, everyNthFrame: 1 };
+
+async function stopDemandVideo(name) {
+  const active = liveVideoRecorders.get(name);
+  if (!active) return;
+  liveVideoRecorders.delete(name);
+  await active.recorder.stop().catch(error => console.warn(`${name}: video recorder stop failed: ${error.message}`));
+  const state = liveFrameState.get(name), session = liveSessions.get(name);
+  if (state) { state.video = false; state.suspended = false; }
+  if (session) await session.send('Page.startScreencast', screencastOptions).catch(() => {});
+  setTimeout(() => { try { unlinkSync(active.file); } catch {} }, 5_000).unref?.();
+}
+
+async function startDemandVideo(name, page, demand) {
+  const current = liveVideoRecorders.get(name);
+  if (current?.session === demand.session) return;
+  if (current) await stopDemandVideo(name);
+  const state = liveFrameState.get(name), session = liveSessions.get(name);
+  if (!state || !session || page.isClosed()) return;
+  state.video = true;
+  state.suspended = true;
+  await session.send('Page.stopScreencast').catch(() => {});
+  const folder = resolve(streamRoot, name), file = resolve(folder, `video-${demand.session}.webm`);
+  mkdirSync(folder, { recursive: true });
+  try { unlinkSync(file); } catch {}
+  try {
+    const recorder = await page.screencast({ path: file, fps: Math.max(12, Math.min(24, Number(demand.fps || 20))), format: 'webm', quality: 36, overwrite: true });
+    liveVideoRecorders.set(name, { session: demand.session, recorder, file });
+    console.log(`${name}: live WebM video started`);
+  } catch (error) {
+    state.video = false;
+    state.suspended = false;
+    await session.send('Page.startScreencast', screencastOptions).catch(() => {});
+    console.warn(`${name}: live WebM unavailable: ${error.message}`);
+  }
+}
+
+let videoDemandBusy = false;
+async function monitorVideoDemand() {
+  if (videoDemandBusy) return;
+  videoDemandBusy = true;
+  try {
+    for (const [name, page] of livePages) {
+      const demandFile = resolve(streamRoot, name, 'video-demand.json');
+      let demand = null;
+      try { demand = JSON.parse(readFileSync(demandFile, 'utf8')); } catch {}
+      const fresh = demand?.session && Date.now() - Number(demand.requestedAt || 0) < 4_000;
+      if (fresh) await startDemandVideo(name, page, demand);
+      else if (liveVideoRecorders.has(name)) await stopDemandVideo(name);
+    }
+  } finally { videoDemandBusy = false; }
+}
 
 async function installOperatorVision(page) {
   await page.evaluate(() => {
@@ -298,6 +350,33 @@ async function installOperatorVision(page) {
   });
 }
 
+async function advanceLivePage(name, page, result) {
+  const browse = liveBrowseState.get(name), frameState = liveFrameState.get(name);
+  if (!browse || !frameState || browse.navigating || page.isClosed()) return;
+  browse.navigating = true;
+  const operator = frameState.operator;
+  try {
+    browse.visited.add(String(result.currentUrl || page.url()).split('#')[0]);
+    let next = (result.links || []).find(link => !browse.visited.has(link.url))?.url;
+    if (!next) {
+      browse.round += 1;
+      browse.visited.clear();
+      next = operator.target_url;
+    }
+    browse.visited.add(next);
+    if (!frameState.video) frameState.suspended = true;
+    await page.goto(next, { waitUntil: 'domcontentloaded', timeout: 15_000 }).catch(error => console.warn(`${name}: continuous route navigation settled partially: ${error.message}`));
+    await installOperatorVision(page);
+    await page.evaluate(() => { window.__cennomoNaturalReader = { paused: false, seen: new Set(), lastPump: Date.now() }; });
+    browse.bottomSeen = 0;
+    browse.recheckAt = 0;
+  } finally {
+    browse.navigating = false;
+    if (!frameState.video) frameState.suspended = false;
+    liveBrowseState.set(name, browse);
+  }
+}
+
 function startLiveScrollPump() {
   if (liveScrollPump) clearInterval(liveScrollPump);
   liveScrollPump = setInterval(() => {
@@ -305,22 +384,34 @@ function startLiveScrollPump() {
     liveScrollPumping = true;
     const entries = [...livePages.entries()];
     (async () => {
-      await Promise.allSettled(entries.map(([, page]) => page.evaluate(() => {
+      const scrollResults = await Promise.allSettled(entries.map(([, page]) => page.evaluate(() => {
         const state = window.__cennomoNaturalReader;
-        if (!state || state.paused) return;
+        if (!state || state.paused) return null;
         const root = document.scrollingElement || document.documentElement;
         const limit = Math.max(0, root.scrollHeight - innerHeight);
         const now = Date.now(), elapsed = Math.min(600, Math.max(0, now - (state.lastPump || now - 250)));
         state.lastPump = now;
         if (root.scrollTop < limit - 3) root.scrollTop = Math.min(limit, root.scrollTop + elapsed * .058);
         window.__cennomoVisionUpdate?.();
+        if (root.scrollTop < limit - 3) return null;
+        const links = [...document.querySelectorAll('a[href]')].map(link => {
+          try {
+            const url = new URL(link.href, location.href);
+            url.hash = '';
+            const label = (link.getAttribute('aria-label') || link.textContent || '').replace(/\s+/g, ' ').trim();
+            if (url.origin !== location.origin || !/^https?:$/.test(url.protocol) || url.href === location.href.split('#')[0] || label.length < 2 || /\.(?:pdf|zip|png|jpe?g|gif|svg|webp|mp4|mp3)$/i.test(url.pathname) || /\b(?:logout|signout|login|signin|auth)\b/i.test(url.pathname)) return null;
+            return { url: url.href, label: label.slice(0, 80) };
+          } catch { return null; }
+        }).filter(Boolean);
+        return { currentUrl: location.href, links };
       })));
+      scrollResults.forEach((result, index) => { if (result.status === 'fulfilled' && result.value) void advanceLivePage(entries[index][0], entries[index][1], result.value); });
       const captures = [];
       for (let offset = 0; offset < Math.min(3, entries.length); offset += 1) captures.push(entries[(liveCaptureCursor + offset) % entries.length]);
       liveCaptureCursor = entries.length ? (liveCaptureCursor + captures.length) % entries.length : 0;
       await Promise.allSettled(captures.map(async ([name]) => {
         const state = liveFrameState.get(name), session = liveSessions.get(name);
-        if (!state || !session || state.busy || state.suspended || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
+        if (!state || !session || state.video || state.busy || state.suspended || Date.now() - state.lastPublished < liveFrameIntervalMs) return;
         state.busy = true;
         state.lastPublished = Date.now();
         try {
@@ -351,7 +442,7 @@ async function ensureLiveBrowser() {
     });
     liveBrowser = browser;
     startLiveScrollPump();
-    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null;if(liveScrollPump){clearInterval(liveScrollPump);liveScrollPump=null}livePages.clear(); liveSessions.clear(); liveFrameState.clear(); liveBrowseState.clear(); });
+    browser.on('disconnected', () => { if (liveBrowser === browser) liveBrowser = null;if(liveScrollPump){clearInterval(liveScrollPump);liveScrollPump=null}liveVideoRecorders.clear();livePages.clear(); liveSessions.clear(); liveFrameState.clear(); liveBrowseState.clear(); });
     const initial = (await browser.pages())[0];
     if (initial) await initial.close().catch(() => {});
     return browser;
@@ -376,7 +467,7 @@ async function createLivePage(operator) {
     const session = await page.createCDPSession();
     livePages.set(operator.name, page);
     liveSessions.set(operator.name, session);
-    liveFrameState.set(operator.name, { busy: false, suspended: false, lastPublished: 0, operator });
+    liveFrameState.set(operator.name, { busy: false, suspended: false, video: false, lastPublished: 0, operator });
     liveBrowseState.set(operator.name, { visited: new Set([page.url().split('#')[0]]), bottomSeen: 0, round: 1, recheckAt: 0 });
     session.on('Page.screencastFrame', payload => {
       void session.send('Page.screencastFrameAck', { sessionId: payload.sessionId }).catch(() => {});
@@ -426,7 +517,7 @@ async function liveLoop() {
       const operators = Array.isArray(snapshot.operators) ? snapshot.operators : [];
       const activeNames = new Set(operators.map(operator => operator.name));
       for (const [name, page] of livePages) {
-        if (!activeNames.has(name)) { await page.close().catch(() => {}); livePages.delete(name); liveSessions.delete(name); liveFrameState.delete(name); liveBrowseState.delete(name); }
+        if (!activeNames.has(name)) { await stopDemandVideo(name); await page.close().catch(() => {}); livePages.delete(name); liveSessions.delete(name); liveFrameState.delete(name); liveBrowseState.delete(name); }
       }
       const missing = operators.filter(operator => !livePages.has(operator.name));
       await Promise.allSettled(missing.map(async operator => {
@@ -443,7 +534,7 @@ async function liveLoop() {
               const session = liveSessions.get(operator.name);
               const frameState = liveFrameState.get(operator.name);
               if (frameState) frameState.suspended = true;
-              if (session) {
+              if (session && !frameState?.video) {
                 await session.send('Page.stopScreencast').catch(() => {});
                 await session.send('Page.startScreencast', screencastOptions);
               }
@@ -453,7 +544,6 @@ async function liveLoop() {
               });
               await installOperatorVision(page);
               await wait(720);
-              let navigateTo = '';
               const telemetry = await page.evaluate(() => {
                 const selectors = 'button,a[href],input,select,textarea,[role="button"],[role="link"],[role="tab"],h1,h2,h3,pre,table,[role="alert"],[role="dialog"],article';
                 const labelFor = node => (node.getAttribute('aria-label') || node.getAttribute('title') || node.getAttribute('placeholder') || node.textContent || '').replace(/\s+/g, ' ').trim();
@@ -500,34 +590,11 @@ async function liveLoop() {
               telemetry.auditRound = browse.round;
               telemetry.phase = 'reading';
               if (frameState) frameState.telemetry = telemetry;
-              if (telemetry.atBottom) browse.bottomSeen += 1; else browse.bottomSeen = 0;
-              if (browse.bottomSeen >= 2) {
-                const next = telemetry.links.find(link => !browse.visited.has(link.url));
-                if (next) {
-                  telemetry.phase = 'opening-next-page';
-                  browse.visited.add(next.url);
-                  browse.bottomSeen = 0;
-                  navigateTo = next.url;
-                } else {
-                  telemetry.phase = 'awaiting-recheck';
-                  await page.evaluate(() => { if (window.__cennomoNaturalReader) window.__cennomoNaturalReader.paused = true; });
-                  if (!browse.recheckAt) browse.recheckAt = Date.now() + 5 * 60_000;
-                }
-              }
-              if (browse.recheckAt && Date.now() >= browse.recheckAt) {
-                browse.round += 1;
-                browse.visited.clear();
-                browse.bottomSeen = 0;
-                browse.recheckAt = 0;
-                navigateTo = operator.target_url;
-                telemetry.phase = 'opening-next-page';
-                telemetry.auditRound = browse.round;
-              }
               liveBrowseState.set(operator.name, browse);
               delete telemetry.links;
               delete telemetry.atBottom;
               await wait(250);
-              if (session && frameState) {
+              if (session && frameState && !frameState.video) {
                 const fallback = await Promise.race([
                   session.send('Page.captureScreenshot', { format: 'jpeg', quality: 64, fromSurface: true, captureBeyondViewport: false }),
                   wait(1_500).then(() => null)
@@ -538,10 +605,6 @@ async function liveLoop() {
                   try { await publishLiveFrame(operator, fallback.data, telemetry); }
                   finally { frameState.busy = false; }
                 }
-              }
-              if (navigateTo) {
-                await page.goto(navigateTo, { waitUntil: 'domcontentloaded', timeout: 15_000 }).catch(error => console.warn(`${operator.name}: route navigation settled partially: ${error.message}`));
-                await installOperatorVision(page).catch(error => console.warn(`${operator.name}: vision install failed: ${error.message}`));
               }
               if (frameState) frameState.suspended = false;
             })(),
@@ -556,6 +619,7 @@ async function liveLoop() {
           const failures = (liveFailures.get(operator.name) || 0) + 1;
           liveFailures.set(operator.name, failures);
           if (failures >= 3) {
+            await stopDemandVideo(operator.name);
             await Promise.race([page.close().catch(() => {}), wait(2_000)]);
             livePages.delete(operator.name);
             liveSessions.delete(operator.name);
@@ -649,6 +713,7 @@ console.log(`Cennomo worker connected to ${apiBase}`);
 console.log(`Chrome: ${chrome}`);
 console.log(`Worker ID: ${workerId}`);
 void liveLoop();
+setInterval(() => void monitorVideoDemand().catch(error => console.warn(`video demand monitor failed: ${error.message}`)), 500).unref?.();
 for (;;) {
   const started = Date.now();
   try { await cycle(); }

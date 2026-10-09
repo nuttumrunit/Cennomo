@@ -14,8 +14,9 @@ for (const route of ['live', 'operators', 'skills', 'territories', 'treasury', '
   await page.waitForFunction(() => document.documentElement.dataset.api === 'online');
   if (route === 'live') {
     await page.waitForFunction(() => document.querySelector('#stageVision .live-proof'), { timeout: 60_000 });
-    const firstFrame = await page.$eval('.crawl-browser-frame', image => image.dataset.framePath);
-    await page.waitForFunction(previous => document.querySelector('.crawl-browser-frame')?.dataset.framePath !== previous, { timeout: 8_000 }, firstFrame);
+    await page.waitForSelector('.crawl-browser-frame.connected', { timeout: 30_000 });
+    const firstTime = await page.$eval('.crawl-browser-frame', video => video.currentTime);
+    await page.waitForFunction(previous => document.querySelector('.crawl-browser-frame')?.currentTime > previous + .5, { timeout: 8_000 }, firstTime);
   }
   if (route === 'operators') {
     await page.waitForFunction(() => document.querySelectorAll('.operator-live-frame.connected').length === 12, { timeout: 60_000 });
@@ -25,7 +26,9 @@ for (const route of ['live', 'operators', 'skills', 'territories', 'treasury', '
       return current.length === 12 && current.every((path, index) => path && path !== previous[index]);
     }, { timeout: 40_000 }, firstFrames);
     await page.click('.operator-monitor button');
-    await page.waitForSelector('#liveRoom.open #roomLiveFrame.connected', { timeout: 20_000 });
+    await page.waitForSelector('#liveRoom.open #roomLiveFrame.connected', { timeout: 30_000 });
+    const roomTime = await page.$eval('#roomLiveFrame', video => video.currentTime);
+    await page.waitForFunction(previous => document.querySelector('#roomLiveFrame')?.currentTime > previous + .5, { timeout: 8_000 }, roomTime);
     await page.waitForSelector('#roomVision .live-proof', { timeout: 20_000 });
   }
   await page.screenshot({ path: resolve(output, `${route}.png`) });

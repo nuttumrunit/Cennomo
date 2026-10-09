@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { createCipheriv, createDecipheriv, createHash, createPublicKey, randomBytes, randomUUID, timingSafeEqual, verify as verifySignature } from 'node:crypto';
-import { createReadStream, existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { once } from 'node:events';
+import { createReadStream, existsSync, mkdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve, extname, normalize, sep } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
@@ -799,6 +800,55 @@ async function api(request, response, url) {
   }
   if (request.method === 'GET' && url.pathname === '/api/readiness') return sendJson(response, 200, snapshot().readiness);
   if (request.method === 'GET' && url.pathname === '/api/snapshot') return sendJson(response, 200, snapshot());
+  const videoMatch = url.pathname.match(/^\/api\/operators\/([^/]+)\/video\.webm$/);
+  if (request.method === 'GET' && videoMatch) {
+    const name = decodeURIComponent(videoMatch[1]);
+    const operator = db.prepare('SELECT id,name,state FROM operators WHERE name=?').get(name);
+    if (!operator) throw Object.assign(new Error('operator not found'), { status: 404 });
+    const session = randomUUID(), folder = resolve(root, 'streams', name), demandFile = resolve(folder, 'video-demand.json'), videoFile = resolve(folder, `video-${session}.webm`);
+    mkdirSync(folder, { recursive: true });
+    const touchDemand = () => writeFileSync(demandFile, JSON.stringify({ session, requestedAt: Date.now(), fps: 20 }), 'utf8');
+    touchDemand();
+    const heartbeat = setInterval(touchDemand, 1_000);
+    let closed = false, pumping = false, offset = 0, pumpTimer = null;
+    const close = () => {
+      if (closed) return;
+      closed = true;
+      clearInterval(heartbeat);
+      if (pumpTimer) clearInterval(pumpTimer);
+      try { const demand = JSON.parse(readFileSync(demandFile, 'utf8')); if (demand.session === session) unlinkSync(demandFile); } catch {}
+    };
+    response.once('close', close);
+    const started = Date.now();
+    while (!closed && (!existsSync(videoFile) || statSync(videoFile).size < 512)) {
+      if (Date.now() - started > 15_000) { close(); throw Object.assign(new Error('video encoder did not become ready'), { status: 503 }); }
+      await new Promise(resolveWait => setTimeout(resolveWait, 100));
+    }
+    if (closed) return;
+    response.writeHead(200, {
+      'Content-Type': 'video/webm', 'Cache-Control': 'no-store, no-transform', 'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no', 'Accept-Ranges': 'none'
+    });
+    const pump = async () => {
+      if (closed || pumping || !existsSync(videoFile)) return;
+      pumping = true;
+      try {
+        const size = statSync(videoFile).size;
+        if (size > offset) {
+          const end = size - 1;
+          for await (const chunk of createReadStream(videoFile, { start: offset, end })) {
+            if (closed) break;
+            if (!response.write(chunk)) await once(response, 'drain');
+          }
+          offset = end + 1;
+        }
+      } catch (error) { if (!closed) console.warn(`${name}: video tail failed: ${error.message}`); }
+      finally { pumping = false; }
+    };
+    pumpTimer = setInterval(pump, 80);
+    await pump();
+    return;
+  }
   if (request.method === 'GET' && url.pathname === '/api/v1/skills') {
     return sendJson(response, 200, { object: 'list', data: gatewayCatalog(), mcpEndpoint: `${config.origin}/mcp` });
   }
