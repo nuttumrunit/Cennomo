@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import puppeteer from 'puppeteer-core';
 
@@ -284,7 +284,18 @@ async function captureLiveFrame(operator, page) {
   const sequence = ++liveSequence;
   const filename = `live-${Date.now()}-${sequence}.jpg`;
   const target = resolve(folder, filename);
-  const bytes = await page.screenshot({ path: target, type: 'jpeg', quality: 72, captureBeyondViewport: false });
+  const session = await page.createCDPSession();
+  let bytes;
+  try {
+    const shot = await Promise.race([
+      session.send('Page.captureScreenshot', { format: 'jpeg', quality: 72, fromSurface: true, captureBeyondViewport: false }),
+      wait(12_000).then(() => { throw new Error('live frame timed out'); })
+    ]);
+    bytes = Buffer.from(shot.data, 'base64');
+    writeFileSync(target, bytes);
+  } finally {
+    await session.detach().catch(() => {});
+  }
   const proof = createHash('sha256').update(bytes).digest('hex');
   const oldFrames = readdirSync(folder).filter(file => /^live-\d+-\d+\.jpg$/.test(file)).sort().slice(0, -4);
   for (const oldFrame of oldFrames) {
