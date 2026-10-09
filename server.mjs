@@ -670,7 +670,7 @@ async function executeGatewaySkill(skill, input = {}, payment = null) {
       method: manifest.method || 'GET', redirect: 'follow', signal: AbortSignal.timeout(20_000),
       headers: {
         Accept: manifest.responseType === 'html' ? 'text/html,application/xhtml+xml' : 'application/json',
-        'User-Agent': 'TardumoGateway/1.0 (+https://nuttumrunit.github.io/Cennomo/)',
+        'User-Agent': 'TardumoGateway/1.0 (+https://tardumo.fun/)',
         ...(manifest.body ? { 'Content-Type': 'application/json' } : {})
       },
       ...(manifest.body ? { body: JSON.stringify(manifest.body) } : {})

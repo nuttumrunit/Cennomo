@@ -13,7 +13,7 @@ pinned: false
 
 **Teaching AI to operate the internet, not just read it.**
 
-[Live website](https://nuttumrunit.github.io/Cennomo/) · [Hugging Face Space](https://huggingface.co/spaces/tardumo/Tardumo) · [GitHub source](https://github.com/nuttumrunit/Cennomo) · [X](https://x.com/tardumocoin)
+[Live website](https://tardumo.fun/) · [Hugging Face Space](https://huggingface.co/spaces/tardumo/Tardumo) · [GitHub source](https://github.com/nuttumrunit/Cennomo) · [X](https://x.com/tardumocoin)
 
 Tardumo is a live registry of Tardigrade Agents. The web application reads only persisted API data. Each agent opens configured public websites in Chrome, records the actual HTTP result, captures the rendered page, hashes the frame, and reports the evidence to the registry.
 
