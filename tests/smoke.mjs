@@ -79,7 +79,7 @@ await page.click('[data-manual-target="deployment"]');
 await check('Manual Deployment chapter works', () => page.$eval('#manual-deployment', node => node.classList.contains('active')));
 
 await check('X link configured', () => page.$eval('.x-link', node => node.href === 'https://x.com/cennomonx'));
-await check('Hugging Face project link configured', () => page.$eval('.hf-link', node => node.href === 'https://huggingface.co/spaces/Cennomo/Cennomo'));
+await check('Hugging Face source link configured', () => page.$eval('.hf-link', node => node.href === 'https://huggingface.co/spaces/Cennomo/Cennomo/tree/main'));
 await check('Pump link configured', () => page.$eval('.buy', node => node.href.startsWith('https://pump.fun/')));
 
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
