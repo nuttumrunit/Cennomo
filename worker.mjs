@@ -356,7 +356,7 @@ async function runOperator(operator) {
     const metadata = metadataResult.status === 'fulfilled'
       ? metadataResult.value
       : { httpStatus: null, title: '', contentType: '', latencyMs: Math.round(performance.now() - started), metadataError: metadataResult.reason?.message || 'metadata unavailable' };
-    const frame = frameResult.status === 'fulfilled' ? frameResult.value : {};
+    const frame = frameResult.status === 'fulfilled' ? (frameResult.value || {}) : {};
     if (frameResult.status === 'rejected') console.warn(`${operator.name}: frame unavailable: ${frameResult.reason?.message || 'capture failed'}`);
     const skill = probeResult.status === 'fulfilled' ? probeResult.value : null;
     const probeError = probeResult.status === 'rejected' ? probeResult.reason?.message || 'probe failed' : '';
