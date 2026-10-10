@@ -26,22 +26,22 @@ if [[ ! -f .env.production ]]; then
     'SOLANA_CLUSTER=mainnet-beta' \
     'SOLANA_RPC_URL=https://api.mainnet-beta.solana.com' \
     'CENNOMO_BURN_AMOUNT=10000' \
-    'CENNOMO_TOKEN_MINT=' \
-    'PUMPFUN_URL=https://pump.fun/' \
+    'CENNOMO_TOKEN_MINT=DPHKccBgHK68FiBKtyAGpz9BQPskKngm98hTodJFpump' \
+    'PUMPFUN_URL=https://pump.fun/coin/DPHKccBgHK68FiBKtyAGpz9BQPskKngm98hTodJFpump' \
     'CENNOMO_TREASURY_ADDRESS=' \
     'CENNOMO_DEFAULT_CALL_FEE_LAMPORTS=0' > .env.production
 fi
 
 # Public launch values are reconciled on every deployment.
 if grep -q '^CENNOMO_TOKEN_MINT=' .env.production; then
-  sed -i 's|^CENNOMO_TOKEN_MINT=.*$|CENNOMO_TOKEN_MINT=|' .env.production
+  sed -i 's|^CENNOMO_TOKEN_MINT=.*$|CENNOMO_TOKEN_MINT=DPHKccBgHK68FiBKtyAGpz9BQPskKngm98hTodJFpump|' .env.production
 else
-  printf '%s\n' 'CENNOMO_TOKEN_MINT=' >> .env.production
+  printf '%s\n' 'CENNOMO_TOKEN_MINT=DPHKccBgHK68FiBKtyAGpz9BQPskKngm98hTodJFpump' >> .env.production
 fi
 if grep -q '^PUMPFUN_URL=' .env.production; then
-  sed -i 's|^PUMPFUN_URL=.*$|PUMPFUN_URL=https://pump.fun/|' .env.production
+  sed -i 's|^PUMPFUN_URL=.*$|PUMPFUN_URL=https://pump.fun/coin/DPHKccBgHK68FiBKtyAGpz9BQPskKngm98hTodJFpump|' .env.production
 else
-  printf '%s\n' 'PUMPFUN_URL=https://pump.fun/' >> .env.production
+  printf '%s\n' 'PUMPFUN_URL=https://pump.fun/coin/DPHKccBgHK68FiBKtyAGpz9BQPskKngm98hTodJFpump' >> .env.production
 fi
 if grep -q '^CENNOMO_TREASURY_ADDRESS=' .env.production; then
   sed -i 's|^CENNOMO_TREASURY_ADDRESS=.*$|CENNOMO_TREASURY_ADDRESS=|' .env.production
