@@ -88,11 +88,11 @@ After the backend has an HTTPS address, create a GitHub repository variable name
 After the correct Pump.fun mint and Treasury address are confirmed, configure:
 
 ```env
-CENNOMO_TOKEN_MINT=DPHKccBgHK68FiBKtyAGpz9BQPskKngm98hTodJFpump
+CENNOMO_TOKEN_MINT=<confirmed mint address>
 CENNOMO_BURN_AMOUNT=10000
 SOLANA_CLUSTER=mainnet-beta
 SOLANA_RPC_URL=<production RPC endpoint>
-PUMPFUN_URL=https://pump.fun/coin/DPHKccBgHK68FiBKtyAGpz9BQPskKngm98hTodJFpump
+PUMPFUN_URL=https://pump.fun/coin/<confirmed mint address>
 CENNOMO_TREASURY_ADDRESS=<confirmed treasury address>
 ```
 
