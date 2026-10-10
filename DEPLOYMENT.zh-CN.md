@@ -36,8 +36,8 @@
 - `/api/health` 中 `workers` 至少为 `1`。
 - `/api/v1/skills` 返回 12 个工具。
 - Pages 的 Gateway 页面显示 `GATEWAY ONLINE`。
-- Treasury 地址为 `AoFRLLN3GjGcz5BxNuRTqLNDYSgrbhmYggUNotbDAHNF`。
-- CA 为 `Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump`，Deploy 已启用；付费结算在非零调用费策略发布前保持锁定。
+- Treasury 地址当前为 `TBA`。
+- CA 当前为 `TBA`，Deploy、代币燃烧与付费结算保持锁定，直到正确地址确认并重新配置。
 - 7 个凭证型 Operator 保持 `learning`，直到凭证真实验证通过。
 
 ## 四、后续自定义域名

@@ -21,11 +21,9 @@ const snapshot = await request('/api/snapshot');
 check('13 official Tardigrade Agents', snapshot.metrics.officialOperators === 13);
 check('7 credential-gated Tardigrade Agents remain learning', snapshot.operators.filter(operator => operator.state === 'learning' && operator.credential_required).length === 7);
 check('persistent worker metric', snapshot.metrics.onlineWorkers >= 1);
-if (snapshot.config.tokenMint) {
-  const token = await request('/api/token?refresh=1');
-  check('official token verified through Solana RPC', token.status === 'verified' && token.mint === snapshot.config.tokenMint);
-  check('official token authorities revoked', token.mintAuthority === null && token.freezeAuthority === null);
-}
+check('official token CA is TBA', snapshot.config.tokenMint === null && snapshot.token.status === 'not_configured');
+check('Treasury address is TBA', snapshot.config.treasuryAddress === null);
+check('deployment and settlement are locked', snapshot.config.deployEnabled === false && snapshot.config.settlementEnabled === false);
 
 const catalog = await request('/api/v1/skills');
 check('13 unique Gateway tools', catalog.data.length === 13);

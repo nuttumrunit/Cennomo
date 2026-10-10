@@ -60,18 +60,18 @@ function renderTreasury(){
   text('#treasurySettlements',m.settlements||0);
   text('#treasuryGross',`${Number(m.grossCallLamports||0).toLocaleString()} LAMPORTS`);
   text('#treasuryMint',mint||'TBA');
-  text('#treasuryWallet',address||'NOT CONFIGURED');
+  text('#treasuryWallet',address||'TBA');
   text('#treasuryPhase',phase);
-  text('#tokenName',token.name||'TARDUMO AGENT');
-  text('#tokenSymbol',token.symbol||'TARDUMO');
-  text('#tokenSupply',token.supply!=null?`${Number(token.supply).toLocaleString('en-US',{maximumFractionDigits:6})} ${token.symbol||'TARDUMO'}`:'CHECKING');
-  text('#tokenDecimals',token.decimals??'CHECKING');
-  text('#tokenProgram',token.program||'CHECKING');
-  text('#tokenMintAuthority',token.mintAuthority?`${token.mintAuthority.slice(0,4)}…${token.mintAuthority.slice(-4)}`:chainVerified?'REVOKED':'CHECKING');
-  text('#tokenFreezeAuthority',token.freezeAuthority?`${token.freezeAuthority.slice(0,4)}…${token.freezeAuthority.slice(-4)}`:chainVerified?'REVOKED':'CHECKING');
-  text('#tokenSlot',token.slot?Number(token.slot).toLocaleString():'CHECKING');
-  text('#tokenChainStatus',chainVerified?(token.rpcStatus==='degraded'?'VERIFIED · RPC RETRY':'VERIFIED ON SOLANA'):token.status==='degraded'?'RPC DEGRADED':'CHECKING SOLANA');
-  text('#tokenVerifiedAt',token.verifiedAt?`verified ${age(token.verifiedAt)} ago`:'awaiting first verification');
+  text('#tokenName',token.name||'TBA');
+  text('#tokenSymbol',token.symbol||'TBA');
+  text('#tokenSupply',token.supply!=null?`${Number(token.supply).toLocaleString('en-US',{maximumFractionDigits:6})} ${token.symbol||'TARDUMO'}`:launched?'CHECKING':'TBA');
+  text('#tokenDecimals',token.decimals??(launched?'CHECKING':'TBA'));
+  text('#tokenProgram',token.program||(launched?'CHECKING':'TBA'));
+  text('#tokenMintAuthority',token.mintAuthority?`${token.mintAuthority.slice(0,4)}…${token.mintAuthority.slice(-4)}`:chainVerified?'REVOKED':launched?'CHECKING':'TBA');
+  text('#tokenFreezeAuthority',token.freezeAuthority?`${token.freezeAuthority.slice(0,4)}…${token.freezeAuthority.slice(-4)}`:chainVerified?'REVOKED':launched?'CHECKING':'TBA');
+  text('#tokenSlot',token.slot?Number(token.slot).toLocaleString():launched?'CHECKING':'TBA');
+  text('#tokenChainStatus',chainVerified?(token.rpcStatus==='degraded'?'VERIFIED · RPC RETRY':'VERIFIED ON SOLANA'):token.status==='degraded'?'RPC DEGRADED':launched?'CHECKING SOLANA':'TOKEN CA · TBA');
+  text('#tokenVerifiedAt',token.verifiedAt?`verified ${age(token.verifiedAt)} ago`:launched?'awaiting first verification':'awaiting official CA');
   $('#tokenChainLight')?.classList.toggle('verified',chainVerified);
   const pumpfun=$('#treasuryPumpfun');
   if(pumpfun){pumpfun.hidden=false;pumpfun.href=c.pumpfunUrl||'https://pump.fun/'}
@@ -91,14 +91,14 @@ function renderTreasury(){
   if(checks[0]){checks[0].dataset.ready=String(chainVerified);$('b',checks[0]).textContent=chainVerified?'VERIFIED':launched?'CHECKING':'TBA'}
   if(checks[1]){checks[1].dataset.ready=String(treasuryReady);$('b',checks[1]).textContent=treasuryReady?'READY':'MISSING'}
   const settlementState=c.settlementEnabled?'ACTIVE':'NOT ENABLED';
-  const notice=launched?`Token and Treasury are configured. Creator Rewards, burns and settlements remain at zero until independently recorded; paid skill-call settlement is ${settlementState.toLowerCase()}.`:`The launch / tax address is published. The official token CA remains TBA, so token burns and paid settlement stay locked.`;
+  const notice=launched?`Token and Treasury are configured. Creator Rewards, burns and settlements remain at zero until independently recorded; paid skill-call settlement is ${settlementState.toLowerCase()}.`:`The official token CA and Treasury address remain TBA. Token burns and paid settlement stay locked.`;
   $('#payoutList').innerHTML=`<div class="treasury-status-card"><small>CURRENT RECORDED WINDOW</small><b>${m.burns} confirmed burns · ${Number(m.tokensBurned).toLocaleString()} tokens</b><p>${notice}</p></div>`;
   const rows=[
     ['official token CA',mint||'TBA',chainVerified?'on-chain verified':launched?'checking':'awaiting'],
     ['current token supply',token.supply!=null?`${Number(token.supply).toLocaleString('en-US',{maximumFractionDigits:6})} ${token.symbol||'TARDUMO'}`:'not available',chainVerified?'confirmed RPC':'checking'],
     ['token program',token.program||'not available',chainVerified?'confirmed RPC':'checking'],
     ['mint / freeze authority',chainVerified?(token.authoritiesRevoked?'revoked / revoked':'authority present'):'not available',chainVerified?'confirmed RPC':'checking'],
-    ['launch / tax address',address||'NOT CONFIGURED',treasuryReady?'published':'missing'],
+    ['launch / tax address',address||'TBA',treasuryReady?'published':'awaiting'],
     ['creator rewards',Number(t.creatorRewardsSol).toFixed(3)+' SOL',Number(t.creatorRewardsSol)>0?'recorded':'none recorded'],
     ['skill calls',`${m.successfulSkillCalls||0} succeeded`,m.skillCalls?'recorded':'none recorded'],
     ['paid settlement',`${m.settlements||0} recorded`,settlementState.toLowerCase()]
@@ -106,7 +106,7 @@ function renderTreasury(){
   const stamp=new Date().toISOString().slice(11,19);
   $('#treasuryEvents').innerHTML=rows.map(([name,value,state])=>`<div class="treasury-event"><span>${stamp}</span><b>${esc(state)}</b><span>${esc(name)}</span><span title="${esc(String(value))}">${esc(String(value))}</span></div>`).join('');
 }
-async function refreshToken(){const b=$('#tokenRefresh');if(!b)return;b.disabled=true;b.textContent='checking…';try{R.data.token=await api('/token?refresh=1');renderTreasury();toast(R.data.token.status==='verified'?'Token state verified on Solana':'Solana RPC is temporarily degraded')}catch(e){toast(`token refresh failed: ${e.message}`)}finally{b.disabled=false;b.textContent='refresh chain'}}
+async function refreshToken(){const b=$('#tokenRefresh');if(!b)return;if(!R.data?.config?.tokenMint)return toast('Token CA is TBA');b.disabled=true;b.textContent='checking…';try{R.data.token=await api('/token?refresh=1');renderTreasury();toast(R.data.token.status==='verified'?'Token state verified on Solana':'Solana RPC is temporarily degraded')}catch(e){toast(`token refresh failed: ${e.message}`)}finally{b.disabled=false;b.textContent='refresh chain'}}
 function render(){R.operators=R.data.operators;R.skills=R.data.skills;R.events=R.data.events;configure();selectOperator(Math.min(R.selected,R.operators.length-1));renderTable();renderWall();renderEvents();renderSkills($('#skillSearch')?.value||'');renderGateway();renderTerritories();renderTreasury();deployState()}
 async function load(quiet=false){try{const [snapshot,gateway]=await Promise.all([api('/snapshot'),api('/v1/skills')]);R.data=snapshot;R.gateway=gateway.data||[];document.documentElement.dataset.api='online';render()}catch(e){document.documentElement.dataset.api='offline';text('.feed-label','API offline');if(!quiet)toast(`network unavailable: ${e.message}`)}}
 function events(){const s=new EventSource(`${API_ORIGIN}/api/events/stream`);s.addEventListener('snapshot',()=>{clearTimeout(R.reload);R.reload=setTimeout(()=>load(true),900)});s.addEventListener('frame',event=>{try{const data=JSON.parse(event.data),o=R.operators.find(item=>item.id===data.operatorId||item.name===data.operator);if(!o)return;o.stream_path=data.streamPath;o.last_seen=data.observedAt;o.telemetry=data.telemetry;const c=$(`[data-operator-id="${o.id}"]`);if(c){swapFrame($('.operator-live-frame',c),o,$('.feed-awaiting',c));text('[data-role="seen"]','live',c);text('[data-role="event"]',`${data.telemetry?.phase||'reading'} · ${data.observedAt.slice(11,19)} UTC`,c)}if(R.roomOperatorId===o.id){text('#roomSignal','VIDEO · '+String(data.telemetry?.phase||'reading').replaceAll('-',' ').toUpperCase());text('#roomUrl',data.telemetry?.currentUrl||o.target_url);try{text('#roomEndpoint',new URL(data.telemetry?.currentUrl||o.target_url).pathname||'/')}catch{}}setTimeout(()=>{if(R.operators[R.selected]?.id===o.id)renderVision($('#stageVision'),data.telemetry);const current=$(`[data-operator-id="${o.id}"]`);if(current)renderVision($('[data-role="vision"]',current),data.telemetry);if(R.roomOperatorId===o.id)renderVision($('#roomVision'),data.telemetry)},430)}catch{}});s.onerror=()=>document.documentElement.dataset.stream='offline';s.onopen=()=>document.documentElement.dataset.stream='online'}

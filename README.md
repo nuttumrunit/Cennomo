@@ -85,14 +85,15 @@ After the backend has an HTTPS address, create a GitHub repository variable name
 
 ## Token launch
 
-After the Pump.fun mint exists, configure:
+After the correct Pump.fun mint and Treasury address are confirmed, configure:
 
 ```env
-CENNOMO_TOKEN_MINT=Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump
+CENNOMO_TOKEN_MINT=<confirmed mint address>
 CENNOMO_BURN_AMOUNT=10000
 SOLANA_CLUSTER=mainnet-beta
 SOLANA_RPC_URL=<production RPC endpoint>
-PUMPFUN_URL=https://pump.fun/coin/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump
+PUMPFUN_URL=https://pump.fun/coin/<confirmed mint address>
+CENNOMO_TREASURY_ADDRESS=<confirmed treasury address>
 ```
 
 The server will then prepare a `BurnChecked` transaction for the connected wallet. A Tardigrade Agent is registered only after the server reads the confirmed transaction from Solana and verifies the wallet, mint and burn amount.

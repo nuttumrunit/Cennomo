@@ -59,24 +59,19 @@ await check('Territory canvas drawn', () => page.$eval('#territoryCanvas', node 
 await page.click('[data-route="treasury"]');
 await check('Treasury value rendered', () => page.$eval('.treasury-total strong', node => node.textContent.includes('SOL')));
 await check('Treasury events rendered', () => page.$eval('#treasuryEvents', node => node.children.length > 0));
-await check('Treasury wallet links to Solscan', () => page.$eval('#treasuryExplorer', node => !node.hidden && node.href.startsWith('https://solscan.io/account/')));
+await check('Treasury explorer hidden while address is TBA', () => page.$eval('#treasuryExplorer', node => node.hidden));
 await check('Treasury reports real settlement counters', () => page.$eval('#treasurySettlements', node => /^\d+$/.test(node.textContent.trim())));
-await check('Treasury reports token verified', () => page.$eval('#treasuryPhase', node => node.textContent === 'TOKEN VERIFIED'));
-await check('Treasury publishes official CA', () => page.$eval('#treasuryMint', node => node.textContent === 'Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
-await check('Treasury links official Pump.fun coin', () => page.$eval('#treasuryPumpfun', node => node.href === 'https://pump.fun/coin/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
-await check('Treasury links token explorer', () => page.$eval('#tokenExplorer', node => node.href === 'https://solscan.io/token/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
-await check('Token profile is RPC verified', () => page.$eval('#tokenChainStatus', node => node.textContent.startsWith('VERIFIED')));
-await check('Token profile reports Token-2022', () => page.$eval('#tokenProgram', node => node.textContent === 'Token-2022'));
-await check('Token profile reports live supply', () => page.$eval('#tokenSupply', node => /^\d[\d,.]* TARDUMO$/.test(node.textContent)));
-await check('Token authorities are revoked', () => page.$$eval('#tokenMintAuthority,#tokenFreezeAuthority', nodes => nodes.every(node => node.textContent === 'REVOKED')));
-await page.click('#tokenRefresh');
-await page.waitForFunction(() => document.querySelector('#tokenRefresh')?.textContent === 'refresh chain');
-await check('Manual token refresh works', () => page.$eval('#tokenSlot', node => /^\d[\d,]+$/.test(node.textContent)));
-await check('Treasury publishes launch tax address', () => page.$eval('#treasuryWallet', node => node.textContent === 'AoFRLLN3GjGcz5BxNuRTqLNDYSgrbhmYggUNotbDAHNF'));
+await check('Treasury reports addresses pending', () => page.$eval('#treasuryPhase', node => node.textContent === 'NOT CONFIGURED'));
+await check('Treasury CA is TBA', () => page.$eval('#treasuryMint', node => node.textContent === 'TBA'));
+await check('Treasury Pump.fun link uses homepage', () => page.$eval('#treasuryPumpfun', node => node.href === 'https://pump.fun/'));
+await check('Token explorer hidden while CA is TBA', () => page.$eval('#tokenExplorer', node => node.hidden));
+await check('Token profile reports CA TBA', () => page.$eval('#tokenChainStatus', node => node.textContent === 'TOKEN CA · TBA'));
+await check('Token profile values are TBA', () => page.$$eval('#tokenName,#tokenSymbol,#tokenSupply,#tokenDecimals,#tokenProgram,#tokenMintAuthority,#tokenFreezeAuthority,#tokenSlot', nodes => nodes.every(node => node.textContent === 'TBA')));
+await check('Treasury address is TBA', () => page.$eval('#treasuryWallet', node => node.textContent === 'TBA'));
 await check('Treasury heading is neutral', () => page.$eval('#route-treasury .section-head b', node => node.textContent === 'NETWORK TREASURY'));
 
 await page.click('[data-route="deploy"]');
-await check('Deploy awaits wallet with live CA', () => page.$eval('#spawnButton', node => !node.disabled && node.textContent.includes('connect wallet')));
+await check('Deploy locked while CA is TBA', () => page.$eval('#spawnButton', node => node.disabled && node.textContent.includes('deployment locked')));
 await page.click('#connectWallet');
 await page.waitForSelector('#walletModal.open');
 await check('Wallet selector opens', () => page.$eval('#walletModal', node => node.getAttribute('aria-hidden') === 'false'));
@@ -96,8 +91,8 @@ await check('Hugging Face source link configured', () => page.$eval('.hf-link', 
 await check('Tardumo branding configured', () => page.$eval('.wordmark', node => node.textContent === 'Tardumo'));
 await check('Tardumo logo configured', () => page.$eval('.brand img', node => node.getAttribute('src') === 'tardumo-logo.png'));
 await check('Tardigrade navigation configured', () => page.$eval('[data-route="operators"]', node => node.textContent === 'tardigrades'));
-await check('Official CA configured', () => page.$eval('.ca-row code', node => node.textContent === 'Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
-await check('Pump link uses official coin', () => page.$eval('.buy', node => node.href === 'https://pump.fun/coin/Bos5G96FCGEGWmhVG6RCfByvKxyoiM2kZDR3HDX4pump'));
+await check('Official CA is TBA', () => page.$eval('.ca-row code', node => node.textContent === 'TBA'));
+await check('Pump link uses homepage while CA is TBA', () => page.$eval('.buy', node => node.href === 'https://pump.fun/'));
 
 await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 });
 await page.goto(`${base}#live`, { waitUntil: 'networkidle2', timeout: 30_000 });
